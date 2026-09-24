@@ -1,0 +1,51 @@
+{
+  "name": "erp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ERP modular multiempresa — monorepo (apps + packages)",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev --workspace @erp/api",
+    "dev:web": "npm run dev --workspace @erp/web",
+    "dev:mobile": "npm run start --workspace @erp/mobile",
+    "db:memory": "tsx scripts/dev-db.ts",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev:atlas": "npm run dev",
+    "dev:memory": "npm run db:memory"
+  },
+  "devDependencies": {
+    "@erp/constants": "*",
+    "@erp/types": "*",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "@types/supertest": "^7.2.1",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "express": "^5.2.1",
+    "globals": "^17.12.0",
+    "mongodb-memory-server": "^11.3.0",
+    "prettier": "^3.9.8",
+    "supertest": "^7.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.1"
+  }
+}
