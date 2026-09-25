@@ -48,6 +48,7 @@ export const errorHandler = (
   error: Error & { statusCode?: number; isOperational?: boolean },
   _req: Request,
   res: Response,
+  _next: NextFunction,
 ): void => {
   const statusCode = error.statusCode ?? 500;
 
