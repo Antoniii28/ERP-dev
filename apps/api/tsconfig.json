@@ -4,16 +4,15 @@
     "types": [
       "node"
     ],
-    "baseUrl": "../..",
     "paths": {
       "@erp/validation": [
-        "packages/validation/src/index.ts"
+        "../../packages/validation/src/index.ts"
       ],
       "@erp/types": [
-        "packages/types/src/index.ts"
+        "../../packages/types/src/index.ts"
       ],
       "@erp/constants": [
-        "packages/constants/src/index.ts"
+        "../../packages/constants/src/index.ts"
       ]
     }
   },
