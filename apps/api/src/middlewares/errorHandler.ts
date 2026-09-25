@@ -50,6 +50,8 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
+  void _next;
+
   const statusCode = error.statusCode ?? 500;
 
   if (statusCode >= 500) {
