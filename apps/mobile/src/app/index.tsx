@@ -1,9 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={styles.screen}>
+    <View style={styles.screen}>
       <StatusBar style="light" />
 
       <View style={styles.hero}>
@@ -32,7 +32,7 @@ export default function HomeScreen() {
       </View>
 
       <Text style={styles.footer}>JAFORA ERP · React Native + Expo</Text>
-    </SafeAreaView>
+    </View>
   );
 }
 
