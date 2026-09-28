@@ -179,7 +179,8 @@ export const UsersPage = () => {
       {error && <p className="form-error">{error}</p>}
 
       <div className="admin-grid">
-        <form className="info-card admin-form" onSubmit={submit}>
+        {canCreateUsers && (
+          <form className="info-card admin-form" onSubmit={submit}>
           <h2>Nuevo usuario</h2>
 
           <input
@@ -249,7 +250,8 @@ export const UsersPage = () => {
           <button className="primary-button" type="submit">
             Crear usuario
           </button>
-        </form>
+          </form>
+        )}
 
         <div className="info-card">
           <h2>Usuarios registrados</h2>
