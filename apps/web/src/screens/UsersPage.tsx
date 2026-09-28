@@ -375,12 +375,14 @@ export const UsersPage = () => {
 
                         <b>{item.isActive ? 'Activo' : 'Inactivo'}</b>
 
-                        <button
-                          type="button"
-                          onClick={() => startEditing(item)}
-                        >
-                          Editar
-                        </button>
+                        {canUpdateUsers && (
+                          <button
+                            type="button"
+                            onClick={() => startEditing(item)}
+                          >
+                            Editar
+                          </button>
+                        )}
                       </div>
                     </>
                   )}
