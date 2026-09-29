@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { authenticate,requirePermission } from '../middlewares/auth.js';
+import { ValidationError } from '../middlewares/errorHandler.js';
+import * as c from '../controllers/commercialController.js';
+export const commercialRouter=Router();
+const validate=(s:z.ZodType)=>(req:import('express').Request,_res:import('express').Response,next:import('express').NextFunction)=>{const r=s.safeParse(req.body);if(!r.success)return next(new ValidationError(r.error.issues[0]?.message??'Datos inválidos'));req.body=r.data;next()};
+const sale=z.object({companyId:z.string().min(1),branchId:z.string().min(1),customerId:z.string().optional(),productId:z.string().min(1),quantity:z.coerce.number().int().positive()});
+const purchase=z.object({companyId:z.string().min(1),branchId:z.string().min(1),supplierId:z.string().optional(),productId:z.string().min(1),quantity:z.coerce.number().int().positive(),unitCost:z.coerce.number().min(0)});
+const finance=z.object({companyId:z.string().min(1),branchId:z.string().min(1),type:z.enum(['income','expense']),category:z.string().min(2),description:z.string().max(300).optional(),amount:z.coerce.number().positive()});
+commercialRouter.get('/sales',authenticate,requirePermission('sales.read'),c.listSales);commercialRouter.post('/sales',authenticate,requirePermission('sales.create'),validate(sale),c.createSale);
+commercialRouter.get('/purchases',authenticate,requirePermission('purchases.read'),c.listPurchases);commercialRouter.post('/purchases',authenticate,requirePermission('purchases.create'),validate(purchase),c.createPurchase);
+commercialRouter.get('/finance',authenticate,requirePermission('finance.read'),c.listFinance);commercialRouter.post('/finance',authenticate,requirePermission('finance.create'),validate(finance),c.createFinanceEntry);
