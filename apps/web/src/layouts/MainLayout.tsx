@@ -6,6 +6,7 @@ export const MainLayout = () => {
   const { user, logout } = useAuth();
   const permissions = new Set(user?.roles.flatMap((role) => role.permissions) ?? []);
   const can = (permission: string) => permissions.has('*') || permissions.has(permission);
+  const canOrganizations = can('companies.read') || can('branches.read');
 
   return (
     <div className="app-shell">
@@ -15,6 +16,7 @@ export const MainLayout = () => {
           <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>▦ <span>Panel principal</span></NavLink>
           {can('users.read') && <NavLink to="/users" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>♙ <span>Usuarios</span></NavLink>}
           {can('roles.read') && <NavLink to="/roles" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>◈ <span>Roles</span></NavLink>}
+          {canOrganizations && <NavLink to="/organizations" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>▣ <span>Empresas</span></NavLink>}
           <div className="nav-item disabled">◫ <span>Clientes</span><em>Próximamente</em></div>
           <div className="nav-item disabled">◇ <span>Inventario</span><em>Próximamente</em></div>
           <div className="nav-item disabled">◎ <span>Ventas</span><em>Próximamente</em></div>
