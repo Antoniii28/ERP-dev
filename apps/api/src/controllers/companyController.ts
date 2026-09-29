@@ -14,6 +14,6 @@ export const createCompany = async (req: AuthRequest, res: Response, next: NextF
 };
 
 export const updateCompany = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try { res.json({ success: true, data: await companies.updateCompany(req.params.id, req.body), message: 'Empresa actualizada' }); }
+  try { res.json({ success: true, data: await companies.updateCompany(String(req.params.id), req.body), message: 'Empresa actualizada' }); }
   catch (e) { next(e); }
 };
