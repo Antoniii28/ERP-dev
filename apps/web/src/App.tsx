@@ -4,6 +4,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 import { MainLayout } from './layouts/MainLayout';
 import { DashboardPage } from './screens/DashboardPage';
 import { LoginPage } from './screens/LoginPage';
+import { OrganizationsPage } from './screens/OrganizationsPage';
 import { RolesPage } from './screens/RolesPage';
 import { UsersPage } from './screens/UsersPage';
 
@@ -16,6 +17,7 @@ const App = () => (
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/roles" element={<RolesPage />} />
+        <Route path="/organizations" element={<OrganizationsPage />} />
       </Route>
     </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
