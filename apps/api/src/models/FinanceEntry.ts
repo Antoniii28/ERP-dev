@@ -1,0 +1,3 @@
+import { Schema, model } from 'mongoose';
+const schema=new Schema({companyId:{type:Schema.Types.ObjectId,ref:'Company',required:true,index:true},branchId:{type:Schema.Types.ObjectId,ref:'Branch',required:true},type:{type:String,enum:['income','expense'],required:true},category:{type:String,required:true,trim:true},description:{type:String,default:'',trim:true},amount:{type:Number,required:true,min:0},sourceType:{type:String,enum:['sale','purchase','manual'],default:'manual'},sourceId:{type:Schema.Types.ObjectId,default:null}},{timestamps:true});
+export const FinanceEntryModel=model('FinanceEntry',schema);
