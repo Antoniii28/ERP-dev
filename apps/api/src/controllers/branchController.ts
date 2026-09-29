@@ -14,6 +14,6 @@ export const createBranch = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 export const updateBranch = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try { res.json({ success: true, data: await branches.updateBranch(req.params.id, req.body), message: 'Sucursal actualizada' }); }
+  try { res.json({ success: true, data: await branches.updateBranch(String(req.params.id), req.body), message: 'Sucursal actualizada' }); }
   catch (e) { next(e); }
 };
