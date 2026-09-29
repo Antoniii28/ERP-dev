@@ -7,6 +7,7 @@ export const MainLayout = () => {
   const permissions = new Set(user?.roles.flatMap((role) => role.permissions) ?? []);
   const can = (permission: string) => permissions.has('*') || permissions.has(permission);
   const canOrganizations = can('companies.read') || can('branches.read');
+  const canOperations = can('customers.read') || can('suppliers.read') || can('products.read') || can('inventory.read');
 
   return (
     <div className="app-shell">
@@ -17,8 +18,7 @@ export const MainLayout = () => {
           {can('users.read') && <NavLink to="/users" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>♙ <span>Usuarios</span></NavLink>}
           {can('roles.read') && <NavLink to="/roles" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>◈ <span>Roles</span></NavLink>}
           {canOrganizations && <NavLink to="/organizations" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>▣ <span>Empresas</span></NavLink>}
-          <div className="nav-item disabled">◫ <span>Clientes</span><em>Próximamente</em></div>
-          <div className="nav-item disabled">◇ <span>Inventario</span><em>Próximamente</em></div>
+          {canOperations && <NavLink to="/operations" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>◫ <span>Operaciones</span></NavLink>}
           <div className="nav-item disabled">◎ <span>Ventas</span><em>Próximamente</em></div>
         </nav>
         <div className="sidebar__footer"><span>{user?.email}</span><button onClick={() => void logout()}>Cerrar sesión</button></div>
