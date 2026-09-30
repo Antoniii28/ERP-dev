@@ -6,6 +6,9 @@ import { DashboardPage } from './screens/DashboardPage';
 import { CoreOperationsPage } from './screens/CoreOperationsPage';
 import { CommercialPage } from './screens/CommercialPage';
 import { LoginPage } from './screens/LoginPage';
+import { ReportsPage } from './screens/ReportsPage';
+import { CrmPage } from './screens/CrmPage';
+import { InsightsPage } from './screens/InsightsPage';
 import { OrganizationsPage } from './screens/OrganizationsPage';
 import { RolesPage } from './screens/RolesPage';
 import { UsersPage } from './screens/UsersPage';
@@ -22,6 +25,9 @@ const App = () => (
         <Route path="/organizations" element={<OrganizationsPage />} />
         <Route path="/operations" element={<CoreOperationsPage />} />
         <Route path="/commercial" element={<CommercialPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/crm" element={<CrmPage />} />
+        <Route path="/insights" element={<InsightsPage />} />
       </Route>
     </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
