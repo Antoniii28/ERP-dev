@@ -8,17 +8,6 @@ const AuthContext = createContext<AuthValue | null>(null);
 const getAccess = () => sessionStorage.getItem('jafora.access');
 const getRefresh = () => localStorage.getItem('jafora.refresh');
 
-const refreshSession = async () => {
-  const refreshToken = getRefresh();
-  if (!refreshToken) throw new Error('Sesión expirada');
-  const response = await fetch(`${API}/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.message ?? 'Sesión expirada');
-  sessionStorage.setItem('jafora.access', body.data.accessToken);
-  localStorage.setItem('jafora.refresh', body.data.refreshToken);
-  return body.data;
-};
-
 const request = async (path: string, init: RequestInit = {}) => {
   const response = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } });
   const body = await response.json();
