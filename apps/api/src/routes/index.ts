@@ -6,6 +6,7 @@ import { companiesRouter } from './companies.js';
 import { commercialRouter } from './commercial.js';
 import { coreOperationsRouter } from './coreOperations.js';
 import { healthRouter } from './health.js';
+import { insightsRouter } from './insights.js';
 import { rolesRouter } from './roles.js';
 import { usersRouter } from './users.js';
 
@@ -19,3 +20,4 @@ apiRouter.use('/companies', companiesRouter);
 apiRouter.use('/branches', branchesRouter);
 apiRouter.use('/', coreOperationsRouter);
 apiRouter.use('/', commercialRouter);
+apiRouter.use('/', insightsRouter);
