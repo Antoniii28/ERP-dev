@@ -5,7 +5,7 @@ import { UserModel } from '../models/User.js';
 import { verifyToken } from '../utils/security.js';
 
 export interface AuthRequest extends Request {
-  auth?: { userId: string; permissions: string[] };
+  auth?: { userId: string; permissions: string[]; companyId?: string };
 }
 
 export const authenticate = async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
@@ -16,7 +16,7 @@ export const authenticate = async (req: AuthRequest, _res: Response, next: NextF
     const user = await UserModel.findById(payload.sub).populate('roleIds', 'permissions').lean();
     if (!user || !user.isActive) throw new AuthenticationError();
     const roles = user.roleIds as unknown as Array<{ permissions: string[] }>;
-    req.auth = { userId: payload.sub, permissions: [...new Set(roles.flatMap((role) => role.permissions))] };
+    req.auth = { userId: payload.sub, permissions: [...new Set(roles.flatMap((role) => role.permissions))], companyId: user.companyId ? String(user.companyId) : undefined };
     next();
   } catch (error) { next(error); }
 };
@@ -27,3 +27,10 @@ export const requirePermission = (permission: string) =>
     if (!permissions.includes('*') && !permissions.includes(permission)) return next(new AuthorizationError());
     next();
   };
+
+export const scopedCompanyId = (req: AuthRequest, requested?: unknown): string | undefined => {
+  const assigned = req.auth?.companyId;
+  const requestedId = requested ? String(requested) : undefined;
+  if (assigned && requestedId && assigned !== requestedId) throw new AuthorizationError('No tienes acceso a esta empresa');
+  return assigned ?? requestedId;
+};
