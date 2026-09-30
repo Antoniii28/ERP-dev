@@ -9,6 +9,8 @@ export const MainLayout = () => {
   const canOrganizations = can('companies.read') || can('branches.read');
   const canOperations = can('customers.read') || can('suppliers.read') || can('products.read') || can('inventory.read');
   const canCommercial = can('sales.read') || can('purchases.read') || can('finance.read');
+  const canReports = can('reports.read');
+  const canCrm = can('crm.read');
 
   return (
     <div className="app-shell">
@@ -21,6 +23,9 @@ export const MainLayout = () => {
           {canOrganizations && <NavLink to="/organizations" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>▣ <span>Empresas</span></NavLink>}
           {canOperations && <NavLink to="/operations" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>◫ <span>Operaciones</span></NavLink>}
           {canCommercial && <NavLink to="/commercial" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>◎ <span>Comercial</span></NavLink>}
+          {canReports && <NavLink to="/reports" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>▤ <span>Reportes</span></NavLink>}
+          {canCrm && <NavLink to="/crm" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>♧ <span>CRM</span></NavLink>}
+          {canReports && <NavLink to="/insights" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>✦ <span>Analítica</span></NavLink>}
         </nav>
         <div className="sidebar__footer"><span>{user?.email}</span><button onClick={() => void logout()}>Cerrar sesión</button></div>
       </aside>
