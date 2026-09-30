@@ -1,0 +1,3 @@
+import { Schema, model } from 'mongoose';
+const schema=new Schema({companyId:{type:Schema.Types.ObjectId,ref:'Company',required:true,index:true},customerId:{type:Schema.Types.ObjectId,ref:'Customer',required:true,index:true},type:{type:String,enum:['note','call','email','meeting','follow_up'],default:'note'},subject:{type:String,required:true,trim:true},notes:{type:String,default:'',trim:true},status:{type:String,enum:['open','done'],default:'open'},nextActionAt:{type:Date,default:null},createdBy:{type:Schema.Types.ObjectId,ref:'User',default:null}},{timestamps:true});
+export const CrmInteractionModel=model('CrmInteraction',schema);
