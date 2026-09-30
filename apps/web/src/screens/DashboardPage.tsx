@@ -1,16 +1,2 @@
-import { useAuth } from '../auth/AuthContext';
-
-export const DashboardPage = () => {
-  const { user } = useAuth();
-  return (
-    <section>
-      <div className="page-heading"><div><span className="eyebrow">Resumen</span><h1>Hola, {user?.firstName || user?.username}</h1><p>La base segura de JAFORA ERP está lista para conectar los módulos operativos.</p></div><span className="status-pill">● Sistema conectado</span></div>
-      <div className="phase-grid">
-        <article><span>01</span><strong>Autenticación</strong><p>JWT de acceso y renovación de sesión.</p></article>
-        <article><span>02</span><strong>Usuarios</strong><p>Identidad, estado y relación con roles.</p></article>
-        <article><span>03</span><strong>Roles y permisos</strong><p>RBAC preparado para permisos granulares.</p></article>
-      </div>
-      <div className="info-card"><span className="eyebrow">Fase 1</span><h2>Seguridad antes que módulos</h2><p>Clientes, inventario, ventas y finanzas se habilitarán en sus fases correspondientes. Esto evita pantallas ficticias y mantiene la arquitectura verificable.</p></div>
-    </section>
-  );
-};
+import { useEffect,useState } from 'react';import { useAuth } from '../auth/AuthContext';const API=import.meta.env.VITE_API_URL??'http://localhost:4000/api/v1';
+export const DashboardPage=()=>{const {user}=useAuth();const [d,setD]=useState<any>(null),[e,setE]=useState('');useEffect(()=>{fetch(API+'/dashboard/summary',{headers:{Authorization:`Bearer ${sessionStorage.getItem('jafora.access')}`}}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.message);return b.data}).then(setD).catch(x=>setE(x.message))},[]);return <section><div className="page-heading"><div><span className="eyebrow">Resumen ejecutivo</span><h1>Hola, {user?.firstName||user?.username}</h1><p>Estado actual de la operación de JAFORA ERP.</p></div><span className="status-pill">● Sistema conectado</span></div>{e&&<p className="form-error">{e}</p>}{d&&<><div className="kpi-grid"><article><span>Ventas</span><strong>{d.kpis.sales}</strong><small>$ {d.kpis.income.toFixed(2)} ingresos</small></article><article><span>Compras</span><strong>{d.kpis.purchases}</strong><small>$ {d.kpis.expense.toFixed(2)} egresos</small></article><article><span>Balance</span><strong>$ {d.kpis.balance.toFixed(2)}</strong><small>Flujo registrado</small></article><article><span>Inventario</span><strong>{d.kpis.inventoryUnits}</strong><small>{d.kpis.lowStock} alertas de stock</small></article></div><div className="operations-grid"><div className="info-card"><span className="eyebrow">Operación</span><h2>Indicadores maestros</h2><div className="metric-list"><p><b>{d.kpis.companies}</b> empresas</p><p><b>{d.kpis.branches}</b> sucursales</p><p><b>{d.kpis.customers}</b> clientes</p><p><b>{d.kpis.suppliers}</b> proveedores</p><p><b>{d.kpis.products}</b> productos</p></div></div><div className="info-card"><span className="eyebrow">Atención</span><h2>Stock bajo</h2><div className="data-list">{d.lowStock.length?d.lowStock.map((x:any)=><article key={x.id}><div><strong>{x.name}</strong><span>{x.sku} · mínimo {x.minStock}</span></div><b>{x.quantity} unidades</b></article>):<p>Sin alertas de stock.</p>}</div></div></div></>}</section>};
