@@ -6,6 +6,7 @@ import { ValidationError } from '../middlewares/errorHandler.js';
 import { RoleModel } from '../models/Role.js';
 import { UserModel } from '../models/User.js';
 import { hashPassword } from '../utils/security.js';
+import { writeAudit } from '../services/auditService.js';
 
 const publicFields = '-passwordHash -refreshTokenHash';
 
@@ -28,7 +29,7 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       username, email, passwordHash: hashPassword(password), firstName, lastName, roleIds,
     });
     const created = await UserModel.findById(user._id).populate('roleIds', 'name permissions').select(publicFields).lean();
-    res.status(201).json({ success: true, data: created, message: 'Usuario creado' });
+    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'user.create',entityType:'User',entityId:user._id,metadata:{email:user.email}}); res.status(201).json({ success: true, data: created, message: 'Usuario creado' });
   } catch (e) { next(e); }
 };
 
@@ -56,6 +57,6 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     const user = await UserModel.findByIdAndUpdate(req.params.id, updates, { new: true })
       .populate('roleIds', 'name permissions').select(publicFields).lean();
     if (!user) throw new ValidationError('El usuario no existe');
-    res.json({ success: true, data: user, message: 'Usuario actualizado' });
+    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'user.update',entityType:'User',entityId:req.params.id,metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: user, message: 'Usuario actualizado' });
   } catch (e) { next(e); }
 };
