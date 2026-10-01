@@ -17,6 +17,11 @@ const rawEnv = {
   CORS_ORIGINS: process.env.CORS_ORIGINS ?? 'http://localhost:5173',
 };
 
+if (rawEnv.NODE_ENV === 'production') {
+  const missing = ['MONGODB_URI','JWT_SECRET','JWT_REFRESH_SECRET'].filter((key) => !process.env[key]);
+  if (missing.length) throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+}
+
 const parsedEnv = envSchema.safeParse(rawEnv);
 
 if (!parsedEnv.success) {
