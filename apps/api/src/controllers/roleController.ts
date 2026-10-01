@@ -4,6 +4,7 @@ import { isValidObjectId } from 'mongoose';
 import type { AuthRequest } from '../middlewares/auth.js';
 import { ValidationError } from '../middlewares/errorHandler.js';
 import { RoleModel } from '../models/Role.js';
+import { writeAudit } from '../services/auditService.js';
 
 export const listRoles = async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -17,7 +18,7 @@ export const createRole = async (req: AuthRequest, res: Response, next: NextFunc
     const { name, description = '', permissions = [] } = req.body;
     if (await RoleModel.exists({ name, companyId: null })) throw new ValidationError('El rol ya existe');
     const role = await RoleModel.create({ name, description, permissions });
-    res.status(201).json({ success: true, data: role, message: 'Rol creado' });
+    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'role.create',entityType:'Role',entityId:role._id,metadata:{name:role.name}}); res.status(201).json({ success: true, data: role, message: 'Rol creado' });
   } catch (e) { next(e); }
 };
 
@@ -33,6 +34,6 @@ export const updateRole = async (req: AuthRequest, res: Response, next: NextFunc
     }
     const role = await RoleModel.findByIdAndUpdate(req.params.id, updates, { new: true }).lean();
     if (!role) throw new ValidationError('El rol no existe');
-    res.json({ success: true, data: role, message: 'Rol actualizado' });
+    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'role.update',entityType:'Role',entityId:req.params.id,metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: role, message: 'Rol actualizado' });
   } catch (e) { next(e); }
 };
