@@ -35,7 +35,7 @@ export const RolesPage = () => {
         <h2>Nuevo rol</h2>
         <input placeholder="Nombre del rol" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         <input placeholder="Descripción" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <textarea placeholder="Permisos separados por coma: users.read, users.create" value={form.permissions} onChange={(e) => setForm({ ...form, permissions: e.target.value })} />
+        <textarea placeholder="Permisos separados por coma. Ej.: users.read, reports.read, crm.read, crm.create, crm.update" value={form.permissions} onChange={(e) => setForm({ ...form, permissions: e.target.value })} />
         <button className="primary-button" type="submit">Crear rol</button>
       </form>
       <div className="info-card"><h2>Roles activos</h2><div className="data-list">
