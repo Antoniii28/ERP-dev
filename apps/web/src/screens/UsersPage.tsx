@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
-
 type Role = {
   _id: string;
   name: string;
@@ -45,29 +43,8 @@ const emptyForm: UserForm = {
   roleIds: [],
 };
 
-const api = async (path: string, init: RequestInit = {}) => {
-  const token = sessionStorage.getItem('jafora.access');
-
-  const response = await fetch(`${API}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...init.headers,
-    },
-  });
-
-  const body = await response.json();
-
-  if (!response.ok) {
-    throw new Error(body.message ?? 'No fue posible completar la operación');
-  }
-
-  return body.data;
-};
-
 export const UsersPage = () => {
-    const { user } = useAuth();
+    const { user, api } = useAuth();
 
   const hasPermission = (permission: string) =>
     user?.roles.some(
@@ -91,11 +68,11 @@ export const UsersPage = () => {
   try {
     setError('');
 
-    const usersData = await api('/users');
+    const usersData = await api<User[]>('/users');
     setUsers(usersData);
 
     if (canReadRoles) {
-      const rolesData = await api('/roles');
+      const rolesData = await api<Role[]>('/roles');
       setRoles(rolesData);
     } else {
       setRoles([]);
@@ -107,7 +84,7 @@ export const UsersPage = () => {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [api, canReadRoles]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
