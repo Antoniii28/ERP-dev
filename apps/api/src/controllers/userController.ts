@@ -10,9 +10,9 @@ import { writeAudit } from '../services/auditService.js';
 
 const publicFields = '-passwordHash -refreshTokenHash';
 
-export const listUsers = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+export const listUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const users = await UserModel.find().populate('roleIds', 'name permissions').select(publicFields).lean();
+    const users = await UserModel.find(req.auth?.companyId ? { companyId: req.auth.companyId } : {}).populate('roleIds', 'name permissions').select(publicFields).lean();
     res.json({ success: true, data: users, message: 'Usuarios obtenidos' });
   } catch (e) { next(e); }
 };
@@ -22,11 +22,12 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
     const { username, email, password, firstName = '', lastName = '', roleIds = [] } = req.body;
     if (roleIds.some((id: string) => !isValidObjectId(id))) throw new ValidationError('Uno o más roles no son válidos');
     if (await UserModel.exists({ email: email.toLowerCase() })) throw new ValidationError('El correo ya está registrado');
-    if (roleIds.length && await RoleModel.countDocuments({ _id: { $in: roleIds }, isActive: true }) !== roleIds.length) {
+    const roleScope = req.auth?.companyId ? { companyId: req.auth.companyId } : {};
+    if (roleIds.length && await RoleModel.countDocuments({ _id: { $in: roleIds }, isActive: true, ...roleScope }) !== roleIds.length) {
       throw new ValidationError('Uno o más roles no existen o están inactivos');
     }
     const user = await UserModel.create({
-      username, email, passwordHash: hashPassword(password), firstName, lastName, roleIds,
+      username, email, passwordHash: hashPassword(password), firstName, lastName, roleIds, companyId: req.auth?.companyId ?? null,
     });
     const created = await UserModel.findById(user._id).populate('roleIds', 'name permissions').select(publicFields).lean();
     await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'user.create',entityType:'User',entityId:user._id,metadata:{email:user.email}}); res.status(201).json({ success: true, data: created, message: 'Usuario creado' });
@@ -49,12 +50,13 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     if (req.body.roleIds !== undefined) {
       const roleIds = req.body.roleIds as string[];
       if (roleIds.some((id) => !isValidObjectId(id))) throw new ValidationError('Uno o más roles no son válidos');
-      if (roleIds.length && await RoleModel.countDocuments({ _id: { $in: roleIds }, isActive: true }) !== roleIds.length) {
+      const roleScope = req.auth?.companyId ? { companyId: req.auth.companyId } : {};
+      if (roleIds.length && await RoleModel.countDocuments({ _id: { $in: roleIds }, isActive: true, ...roleScope }) !== roleIds.length) {
         throw new ValidationError('Uno o más roles no existen o están inactivos');
       }
       updates.roleIds = roleIds;
     }
-    const user = await UserModel.findByIdAndUpdate(req.params.id, updates, { new: true })
+    const user = await UserModel.findOneAndUpdate({ _id: req.params.id, ...(req.auth?.companyId ? { companyId: req.auth.companyId } : {}) }, updates, { new: true })
       .populate('roleIds', 'name permissions').select(publicFields).lean();
     if (!user) throw new ValidationError('El usuario no existe');
     await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'user.update',entityType:'User',entityId:String(req.params.id),metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: user, message: 'Usuario actualizado' });
