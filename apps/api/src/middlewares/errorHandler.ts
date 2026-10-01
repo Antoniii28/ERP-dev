@@ -53,6 +53,7 @@ export const errorHandler = (
   void _next;
 
   const statusCode = error.statusCode ?? 500;
+  const publicMessage = statusCode >= 500 && process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : (error.message || 'Error interno del servidor');
 
   if (statusCode >= 500) {
     console.error(error);
@@ -61,7 +62,7 @@ export const errorHandler = (
   res.status(statusCode).json({
     success: false,
     data: null,
-    message: error.message || 'Error interno del servidor',
+    message: publicMessage,
     ...(process.env.NODE_ENV !== 'production' && statusCode >= 500 ? { stack: error.stack } : {}),
   });
 };
