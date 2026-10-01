@@ -34,6 +34,6 @@ export const updateRole = async (req: AuthRequest, res: Response, next: NextFunc
     }
     const role = await RoleModel.findByIdAndUpdate(req.params.id, updates, { new: true }).lean();
     if (!role) throw new ValidationError('El rol no existe');
-    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'role.update',entityType:'Role',entityId:req.params.id,metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: role, message: 'Rol actualizado' });
+    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'role.update',entityType:'Role',entityId:String(req.params.id),metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: role, message: 'Rol actualizado' });
   } catch (e) { next(e); }
 };
