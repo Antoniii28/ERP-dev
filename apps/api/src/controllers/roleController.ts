@@ -2,7 +2,7 @@ import type { NextFunction, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
 
 import type { AuthRequest } from '../middlewares/auth.js';
-import { ValidationError } from '../middlewares/errorHandler.js';
+import { AuthorizationError, ValidationError } from '../middlewares/errorHandler.js';
 import { RoleModel } from '../models/Role.js';
 import { writeAudit } from '../services/auditService.js';
 
@@ -26,6 +26,7 @@ export const createRole = async (req: AuthRequest, res: Response, next: NextFunc
 export const updateRole = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     if (!isValidObjectId(req.params.id)) throw new ValidationError('Rol no válido');
+    if (req.auth?.companyId && await RoleModel.exists({ _id: req.params.id, companyId: null })) throw new AuthorizationError('Los roles globales solo pueden modificarse desde la administración de plataforma');
     const updates: Record<string, unknown> = {};
     for (const key of ['name', 'description', 'permissions', 'isActive'] as const) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
