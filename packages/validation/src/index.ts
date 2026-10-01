@@ -8,8 +8,8 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   MONGODB_URI: z.string().optional(),
-  JWT_SECRET: z.string().min(16).default('development-secret-change-me'),
-  JWT_REFRESH_SECRET: z.string().min(16).default('development-refresh-secret-change-me'),
+  JWT_SECRET: z.string().min(32).default('development-secret-change-me-32chars'),
+  JWT_REFRESH_SECRET: z.string().min(32).default('development-refresh-secret-change-me-32chars'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
 });
 
