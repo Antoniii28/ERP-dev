@@ -25,7 +25,7 @@ export const createBranch = async (data: {
   return BranchModel.create(data);
 };
 
-export const updateBranch = async (id: string, data: Record<string, unknown>) => {
+export const updateBranch = async (id: string, data: Record<string, unknown>, companyScope?: string) => {
   if (!isValidObjectId(id)) throw new ValidationError('Sucursal no válida');
   if (data.companyId !== undefined) {
     const companyId = String(data.companyId);
@@ -33,7 +33,7 @@ export const updateBranch = async (id: string, data: Record<string, unknown>) =>
       throw new ValidationError('La empresa no existe o está inactiva');
     }
   }
-  const branch = await BranchModel.findByIdAndUpdate(id, data, { new: true, runValidators: true }).populate('companyId', 'name').lean();
+  const branch = await BranchModel.findOneAndUpdate({ _id: id, ...(companyScope ? { companyId: companyScope } : {}) }, data, { new: true, runValidators: true }).populate('companyId', 'name').lean();
   if (!branch) throw new ValidationError('La sucursal no existe');
   return branch;
 };
