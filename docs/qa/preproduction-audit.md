@@ -21,11 +21,11 @@ Repository structure, authentication/RBAC, company scoping, organizations, custo
 - The current signed-token implementation remains custom HS256. Migration to a maintained JOSE/JWT library is recommended as a post-deploy security improvement; do not weaken secrets or expose them to the client.
 
 ## Important follow-up
-- Expand integration tests for RBAC, tenant isolation, stock concurrency, session expiry and commercial consistency. Initial security utility coverage is present.
+- Initial automated coverage now includes security utilities, RBAC permission enforcement and tenant company isolation. Expand later with stock concurrency, session-expiry and commercial-consistency integration cases.
 - Add inventory movement history instead of relying only on absolute stock values.
 - Define cancellation/reversal flows for sales and purchases instead of deleting or manually compensating data.
 - Add pagination/date filters to growing report, finance and CRM collections.
 - Production configuration must define strong secrets, exact CORS origins, HTTPS, production MongoDB access and service health monitoring.
 
 ## Status
-Functional phases 1–5 are validated as a prototype. Production hardening is substantially advanced. Tenant-aware user/role administration is now enforced. The blocking session-storage issue is resolved. Deployment can proceed after dependency installation and the final preproduction QA commands pass; remaining items are tracked as hardening follow-up.
+Functional phases 1–5 are validated as a prototype. Production hardening is substantially advanced. Tenant-aware user/role administration is now enforced. The blocking session-storage issue is resolved. The test runner now includes workspace and root tests and fails if no tests are discovered. Deployment can proceed after the final preproduction QA commands and dependency audit review pass; remaining items are tracked as hardening follow-up.
