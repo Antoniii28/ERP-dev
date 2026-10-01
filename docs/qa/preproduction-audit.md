@@ -17,17 +17,15 @@ Repository structure, authentication/RBAC, company scoping, organizations, custo
 - Preserved unrestricted cross-company behavior only for users that do not have a company assigned (current platform administrator model).
 
 ## Critical gate before public production
-
-## Remaining security gate
-- Refresh token remains in localStorage. Migrate browser refresh sessions to Secure + HttpOnly + SameSite cookies before security sign-off.
-- Replace the custom JWT implementation with a maintained JOSE/JWT library or complete a dedicated security review.
+- Refresh sessions have been migrated out of localStorage to an HttpOnly cookie. Production uses Secure + SameSite=None for split frontend/API origins; local development uses SameSite=Lax.
+- The current signed-token implementation remains custom HS256. Migration to a maintained JOSE/JWT library is recommended as a post-deploy security improvement; do not weaken secrets or expose them to the client.
 
 ## Important follow-up
-- Add integration tests for RBAC, tenant isolation, stock concurrency, session expiry and commercial consistency.
+- Expand integration tests for RBAC, tenant isolation, stock concurrency, session expiry and commercial consistency. Initial security utility coverage is present.
 - Add inventory movement history instead of relying only on absolute stock values.
 - Define cancellation/reversal flows for sales and purchases instead of deleting or manually compensating data.
 - Add pagination/date filters to growing report, finance and CRM collections.
 - Production configuration must define strong secrets, exact CORS origins, HTTPS, production MongoDB access and service health monitoring.
 
 ## Status
-Functional phases 1–5 are validated as a prototype. Production hardening is substantially advanced. Tenant-aware user/role administration is now enforced. Public deployment should wait for the remaining authentication/session security decision and the preproduction QA pass.
+Functional phases 1–5 are validated as a prototype. Production hardening is substantially advanced. Tenant-aware user/role administration is now enforced. The blocking session-storage issue is resolved. Deployment can proceed after dependency installation and the final preproduction QA commands pass; remaining items are tracked as hardening follow-up.
