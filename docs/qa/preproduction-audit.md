@@ -17,9 +17,10 @@ Repository structure, authentication/RBAC, company scoping, organizations, custo
 - Preserved unrestricted cross-company behavior only for users that do not have a company assigned (current platform administrator model).
 
 ## Critical gate before public production
+
+## Remaining security gate
 - Refresh token remains in localStorage. Migrate browser refresh sessions to Secure + HttpOnly + SameSite cookies before security sign-off.
 - Replace the custom JWT implementation with a maintained JOSE/JWT library or complete a dedicated security review.
-- Finish tenant scoping for user/role administration according to the final platform-admin vs company-admin policy.
 
 ## Important follow-up
 - Add integration tests for RBAC, tenant isolation, stock concurrency, session expiry and commercial consistency.
@@ -29,4 +30,4 @@ Repository structure, authentication/RBAC, company scoping, organizations, custo
 - Production configuration must define strong secrets, exact CORS origins, HTTPS, production MongoDB access and service health monitoring.
 
 ## Status
-Functional phases 1–5 are validated as a prototype. Production hardening is substantially advanced. Public deployment should wait for the remaining authentication/session security decisions, final tenant-admin scoping and the preproduction QA pass.
+Functional phases 1–5 are validated as a prototype. Production hardening is substantially advanced. Tenant-aware user/role administration is now enforced. Public deployment should wait for the remaining authentication/session security decision and the preproduction QA pass.
