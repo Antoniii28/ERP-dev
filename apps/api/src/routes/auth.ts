@@ -41,7 +41,7 @@ const bootstrap = credentials.extend({
   firstName: z.string().max(80).optional(),
   lastName: z.string().max(80).optional(),
 });
-const refresh = z.object({ refreshToken: z.string().min(20) });
+const refresh = z.object({ refreshToken: z.string().min(20).optional() });
 
 authRouter.post('/bootstrap', authRateLimit, validate(bootstrap), controller.bootstrap);
 authRouter.post('/login', authRateLimit, validate(credentials), controller.login);
