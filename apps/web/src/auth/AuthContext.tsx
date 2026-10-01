@@ -6,10 +6,9 @@ type AuthValue = { user: User | null; loading: boolean; login: (email: string, p
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
 const AuthContext = createContext<AuthValue | null>(null);
 const getAccess = () => sessionStorage.getItem('jafora.access');
-const getRefresh = () => localStorage.getItem('jafora.refresh');
 
 const rawRequest = async (path: string, init: RequestInit = {}) => {
-  const response = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } });
+  const response = await fetch(`${API}${path}`, { ...init, credentials: 'include', headers: { 'Content-Type': 'application/json', ...init.headers } });
   const body = await response.json().catch(() => ({ message: 'Respuesta inválida del servidor' }));
   if (!response.ok) {
     const error = new Error(body.message ?? 'Error de comunicación') as Error & { status?: number };
@@ -25,20 +24,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const clearSession = useCallback(() => {
     sessionStorage.removeItem('jafora.access');
-    localStorage.removeItem('jafora.refresh');
     setUser(null);
   }, []);
 
-  const saveSession = useCallback((data: { user: User; accessToken: string; refreshToken: string }) => {
+  const saveSession = useCallback((data: { user: User; accessToken: string }) => {
     sessionStorage.setItem('jafora.access', data.accessToken);
-    localStorage.setItem('jafora.refresh', data.refreshToken);
     setUser(data.user);
   }, []);
 
   const renew = useCallback(async () => {
-    const refreshToken = getRefresh();
-    if (!refreshToken) throw new Error('Sesión expirada');
-    const data = await rawRequest('/auth/refresh', { method: 'POST', body: JSON.stringify({ refreshToken }) });
+    const data = await rawRequest('/auth/refresh', { method: 'POST', body: JSON.stringify({}) });
     saveSession(data);
     return data.accessToken as string;
   }, [saveSession]);
