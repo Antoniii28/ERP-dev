@@ -57,6 +57,6 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     const user = await UserModel.findByIdAndUpdate(req.params.id, updates, { new: true })
       .populate('roleIds', 'name permissions').select(publicFields).lean();
     if (!user) throw new ValidationError('El usuario no existe');
-    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'user.update',entityType:'User',entityId:req.params.id,metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: user, message: 'Usuario actualizado' });
+    await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'user.update',entityType:'User',entityId:String(req.params.id),metadata:{fields:Object.keys(updates)}}); res.json({ success: true, data: user, message: 'Usuario actualizado' });
   } catch (e) { next(e); }
 };
