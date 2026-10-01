@@ -8,7 +8,7 @@ import { writeAudit } from '../services/auditService.js';
 
 export const listRoles = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const roles = await RoleModel.find({ isActive: true, ...(req.auth?.companyId ? { companyId: req.auth.companyId } : {}) }).lean();
+    const roles = await RoleModel.find({ isActive: true, ...(req.auth?.companyId ? { $or: [{ companyId: req.auth.companyId }, { companyId: null }] } : {}) }).lean();
     res.json({ success: true, data: roles, message: 'Roles obtenidos' });
   } catch (e) { next(e); }
 };
