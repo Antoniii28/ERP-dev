@@ -1,20 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-const API=import.meta.env.VITE_API_URL??'http://localhost:4000/api/v1';
 type Company={_id:string;name:string}; type Branch={_id:string;name:string;companyId:Company|string};
 type Party={_id:string;name:string;email?:string;phone?:string;companyId:Company|string};
 type Product={_id:string;name:string;sku:string;price:number;minStock:number;companyId:Company|string};
 type Stock={_id:string;quantity:number;branchId:{name:string;code:string};productId:{name:string;sku:string;minStock:number}};
-const api=async(path:string,init:RequestInit={})=>{const r=await fetch(`${API}${path}`,{...init,headers:{'Content-Type':'application/json',Authorization:`Bearer ${sessionStorage.getItem('jafora.access')}`,...init.headers}});const b=await r.json();if(!r.ok)throw new Error(b.message??'Error de comunicación');return b.data;};
 
 export const CoreOperationsPage=()=>{
- const {user}=useAuth(); const perms=new Set(user?.roles.flatMap(r=>r.permissions)??[]); const can=(p:string)=>perms.has('*')||perms.has(p);
+ const {user,api}=useAuth(); const perms=new Set(user?.roles.flatMap(r=>r.permissions)??[]); const can=(p:string)=>perms.has('*')||perms.has(p);
  const [companies,setCompanies]=useState<Company[]>([]),[branches,setBranches]=useState<Branch[]>([]),[customers,setCustomers]=useState<Party[]>([]),[suppliers,setSuppliers]=useState<Party[]>([]),[products,setProducts]=useState<Product[]>([]),[stocks,setStocks]=useState<Stock[]>([]),[error,setError]=useState('');
  const [customer,setCustomer]=useState({companyId:'',name:'',email:'',phone:'',taxId:'',address:''});
  const [supplier,setSupplier]=useState({...customer}); const [product,setProduct]=useState({companyId:'',sku:'',name:'',category:'',cost:0,price:0,minStock:0}); const [stock,setStock]=useState({companyId:'',branchId:'',productId:'',quantity:0});
- const load=async()=>{try{setError('');const cs=await api('/companies');setCompanies(cs);const first=cs[0]?._id??'';setCustomer(x=>({...x,companyId:x.companyId||first}));setSupplier(x=>({...x,companyId:x.companyId||first}));setProduct(x=>({...x,companyId:x.companyId||first}));setStock(x=>({...x,companyId:x.companyId||first}));setBranches(await api('/branches'));if(can('customers.read'))setCustomers(await api('/customers'));if(can('suppliers.read'))setSuppliers(await api('/suppliers'));if(can('products.read'))setProducts(await api('/products'));if(can('inventory.read'))setStocks(await api('/inventory'));}catch(e){setError(e instanceof Error?e.message:'Error al cargar datos');}};
- useEffect(()=>{void load();},[]);
+ const load=async()=>{try{setError('');const cs=await api<Company[]>('/companies');setCompanies(cs);const first=cs[0]?._id??'';setCustomer(x=>({...x,companyId:x.companyId||first}));setSupplier(x=>({...x,companyId:x.companyId||first}));setProduct(x=>({...x,companyId:x.companyId||first}));setStock(x=>({...x,companyId:x.companyId||first}));setBranches(await api<Branch[]>('/branches'));if(can('customers.read'))setCustomers(await api<Party[]>('/customers'));if(can('suppliers.read'))setSuppliers(await api<Party[]>('/suppliers'));if(can('products.read'))setProducts(await api<Product[]>('/products'));if(can('inventory.read'))setStocks(await api<Stock[]>('/inventory'));}catch(e){setError(e instanceof Error?e.message:'Error al cargar datos');}};
+ useEffect(()=>{void load();},[api]);
  const submit=async(e:FormEvent,path:string,data:object,reset:()=>void)=>{e.preventDefault();try{await api(path,{method:'POST',body:JSON.stringify(data)});reset();await load();}catch(x){setError(x instanceof Error?x.message:'No fue posible guardar');}};
  const setQty=async(e:FormEvent)=>{e.preventDefault();try{await api('/inventory',{method:'PUT',body:JSON.stringify(stock)});await load();}catch(x){setError(x instanceof Error?x.message:'No fue posible actualizar inventario');}};
  const companyOptions=companies.map(c=><option key={c._id} value={c._id}>{c.name}</option>);
