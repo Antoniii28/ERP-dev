@@ -22,7 +22,7 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
     const { username, email, password, firstName = '', lastName = '', roleIds = [] } = req.body;
     if (roleIds.some((id: string) => !isValidObjectId(id))) throw new ValidationError('Uno o más roles no son válidos');
     if (await UserModel.exists({ email: email.toLowerCase() })) throw new ValidationError('El correo ya está registrado');
-    const roleScope = req.auth?.companyId ? { companyId: req.auth.companyId } : {};
+    const roleScope = req.auth?.companyId ? { $or: [{ companyId: req.auth.companyId }, { companyId: null }] } : {};
     if (roleIds.length && await RoleModel.countDocuments({ _id: { $in: roleIds }, isActive: true, ...roleScope }) !== roleIds.length) {
       throw new ValidationError('Uno o más roles no existen o están inactivos');
     }
@@ -50,7 +50,7 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
     if (req.body.roleIds !== undefined) {
       const roleIds = req.body.roleIds as string[];
       if (roleIds.some((id) => !isValidObjectId(id))) throw new ValidationError('Uno o más roles no son válidos');
-      const roleScope = req.auth?.companyId ? { companyId: req.auth.companyId } : {};
+      const roleScope = req.auth?.companyId ? { $or: [{ companyId: req.auth.companyId }, { companyId: null }] } : {};
       if (roleIds.length && await RoleModel.countDocuments({ _id: { $in: roleIds }, isActive: true, ...roleScope }) !== roleIds.length) {
         throw new ValidationError('Uno o más roles no existen o están inactivos');
       }
