@@ -1,21 +1,15 @@
+import { useAuth } from '../auth/AuthContext';
 import { useEffect, useState } from 'react';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
 type Role = { _id: string; name: string; description: string; permissions: string[]; isActive: boolean };
-const api = async (path: string, init: RequestInit = {}) => {
-  const token = sessionStorage.getItem('jafora.access');
-  const response = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init.headers } });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.message ?? 'No fue posible completar la operación');
-  return body.data;
-};
 
 export const RolesPage = () => {
+  const { api } = useAuth();
   const [roles, setRoles] = useState<Role[]>([]);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', description: '', permissions: '' });
-  const load = async () => { try { setError(''); setRoles(await api('/roles')); } catch (e) { setError(e instanceof Error ? e.message : 'Error al cargar roles'); } };
-  useEffect(() => { void load(); }, []);
+  const load = async () => { try { setError(''); setRoles(await api<Role[]>('/roles')); } catch (e) { setError(e instanceof Error ? e.message : 'Error al cargar roles'); } };
+  useEffect(() => { void load(); }, [api]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
