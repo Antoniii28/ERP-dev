@@ -5,7 +5,9 @@ import { MainLayout } from './layouts/MainLayout';
 import { DashboardPage } from './screens/DashboardPage';
 import { CoreOperationsPage } from './screens/CoreOperationsPage';
 import { CommercialPage } from './screens/CommercialPage';
+import { ForgotPasswordPage } from './screens/ForgotPasswordPage';
 import { LoginPage } from './screens/LoginPage';
+import { ResetPasswordPage } from './screens/ResetPasswordPage';
 import { ReportsPage } from './screens/ReportsPage';
 import { CrmPage } from './screens/CrmPage';
 import { InsightsPage } from './screens/InsightsPage';
@@ -16,6 +18,8 @@ import { UsersPage } from './screens/UsersPage';
 const App = () => (
   <Routes>
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route element={<ProtectedRoute />}>
       <Route element={<MainLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
