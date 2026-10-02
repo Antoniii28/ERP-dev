@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { RoleModel } from '../models/Role.js';
 import { UserModel } from '../models/User.js';
 import { AuthenticationError, ValidationError } from '../middlewares/errorHandler.js';
@@ -54,6 +56,44 @@ export const refresh = async (refreshToken: string) => {
 
 export const logout = async (userId: string) => {
   await UserModel.findByIdAndUpdate(userId, { $unset: { refreshTokenHash: 1 } });
+};
+
+export const createPasswordReset = async (email: string) => {
+  const user = await UserModel.findOne({ email: email.toLowerCase(), isActive: true });
+  if (!user) return null;
+
+  const token = randomBytes(32).toString('base64url');
+  user.set({
+    passwordResetTokenHash: hashToken(token),
+    passwordResetExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
+  });
+  await user.save();
+
+  return {
+    token,
+    userId: String(user._id),
+    companyId: user.companyId ? String(user.companyId) : undefined,
+    email: user.email,
+    name: user.firstName || user.username,
+  };
+};
+
+export const resetPassword = async (token: string, password: string) => {
+  const user = await UserModel.findOne({
+    passwordResetTokenHash: hashToken(token),
+    passwordResetExpiresAt: { $gt: new Date() },
+    isActive: true,
+  }).select('+passwordResetTokenHash +passwordResetExpiresAt');
+
+  if (!user) throw new ValidationError('El enlace de recuperación es inválido o ha expirado');
+
+  user.passwordHash = hashPassword(password);
+  user.refreshTokenHash = null;
+  user.passwordResetTokenHash = null;
+  user.passwordResetExpiresAt = null;
+  await user.save();
+
+  return { userId: String(user._id), companyId: user.companyId ? String(user.companyId) : undefined };
 };
 
 export const getCurrentUser = publicUser;
