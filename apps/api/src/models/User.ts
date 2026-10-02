@@ -7,6 +7,8 @@ const userSchema = new Schema({
   lastName: { type: String, default: '' },
   passwordHash: { type: String, required: true, select: false },
   refreshTokenHash: { type: String, default: null, select: false },
+  passwordResetTokenHash: { type: String, default: null, select: false },
+  passwordResetExpiresAt: { type: Date, default: null, select: false },
   companyId: { type: Schema.Types.ObjectId, default: null, index: true },
   roleIds: [{ type: Schema.Types.ObjectId, ref: 'Role' }],
   isActive: { type: Boolean, default: true },
