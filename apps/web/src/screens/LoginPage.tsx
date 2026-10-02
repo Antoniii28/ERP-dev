@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthContext';
 import { BrandLogo } from '../components/BrandLogo';
@@ -38,6 +38,7 @@ export const LoginPage = () => {
           <div><span className="eyebrow">Acceso seguro</span><h2>Bienvenido</h2><p>Ingresa con tu cuenta de JAFORA ERP.</p></div>
           <label>Correo electrónico<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" autoComplete="email" required /></label>
           <label>Contraseña<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" minLength={8} required /></label>
+          <div><Link to="/forgot-password">¿Olvidaste tu contraseña?</Link></div>
           {error && <div className="form-error" role="alert">{error}</div>}
           <button className="primary-button" disabled={submitting}>{submitting ? 'Ingresando…' : 'Ingresar a JAFORA'}</button>
           <p className="login-note">La cuenta inicial se crea una sola vez mediante el endpoint seguro de bootstrap.</p>
