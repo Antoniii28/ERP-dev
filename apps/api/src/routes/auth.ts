@@ -27,6 +27,14 @@ const authRateLimit = rateLimit({
   },
 });
 
+const passwordResetRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, data: null, message: 'Demasiadas solicitudes. Intenta nuevamente más tarde' },
+});
+
 const refreshRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 120,
@@ -42,9 +50,13 @@ const bootstrap = credentials.extend({
   lastName: z.string().max(80).optional(),
 });
 const refresh = z.object({ refreshToken: z.string().min(20).optional() });
+const forgotPassword = z.object({ email: z.email() });
+const resetPassword = z.object({ token: z.string().min(20), password: z.string().min(8).max(128) });
 
 authRouter.post('/bootstrap', authRateLimit, validate(bootstrap), controller.bootstrap);
 authRouter.post('/login', authRateLimit, validate(credentials), controller.login);
 authRouter.post('/refresh', refreshRateLimit, validate(refresh), controller.refresh);
+authRouter.post('/forgot-password', passwordResetRateLimit, validate(forgotPassword), controller.forgotPassword);
+authRouter.post('/reset-password', passwordResetRateLimit, validate(resetPassword), controller.resetPassword);
 authRouter.post('/logout', authenticate, controller.logout);
 authRouter.get('/me', authenticate, controller.me);
