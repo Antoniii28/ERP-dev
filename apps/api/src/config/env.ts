@@ -15,6 +15,9 @@ const rawEnv = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   CORS_ORIGINS: process.env.CORS_ORIGINS ?? 'http://localhost:5173',
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  EMAIL_FROM: process.env.EMAIL_FROM ?? 'JAFORA ERP <onboarding@resend.dev>',
+  WEB_URL: process.env.WEB_URL ?? 'http://localhost:5173',
 };
 
 if (rawEnv.NODE_ENV === 'production') {
