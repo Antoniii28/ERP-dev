@@ -39,7 +39,7 @@ beforeAll(async () => {
   ({ createToken, hashPassword } = await import('../../apps/api/src/utils/security.js'));
 
   await mongoose.connect(process.env.MONGODB_URI);
-});
+}, 60_000);
 
 afterEach(async () => {
   vi.restoreAllMocks();
