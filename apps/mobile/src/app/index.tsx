@@ -1,5 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
+import { can, login, logout, restoreSession, type MobileUser } from '../lib/api';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,8 +18,27 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(true);
+  const [user, setUser] = useState<MobileUser | null>(null);
 
-  const handleLogin = () => {
+  useEffect(() => {
+    restoreSession()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setRestoring(false));
+  }, []);
+
+  const modules = useMemo(() => {
+    if (!user) return [];
+    const candidates = [
+      ['Usuarios', 'users.read'], ['Empresas', 'companies.read'], ['Operaciones', 'products.read'],
+      ['Comercial', 'sales.read'], ['Reportes', 'reports.read'], ['CRM', 'crm.read'], ['Analítica', 'reports.read'],
+    ] as const;
+    return candidates.filter(([, permission]) => can(user, permission)).map(([name]) => name);
+  }, [user]);
+
+  const handleLogin = async () => {
     const normalizedEmail = email.trim();
 
     if (!normalizedEmail || !password) {
@@ -30,8 +51,45 @@ export default function LoginScreen() {
       return;
     }
 
-    setMessage('Interfaz lista. La conexión con la API se realizará después.');
+    setLoading(true);
+    setMessage('');
+    try {
+      setUser(await login(normalizedEmail, password));
+      setPassword('');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No fue posible iniciar sesión.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (restoring) {
+    return <View style={[styles.screen, styles.centered]}><StatusBar style="light" /><ActivityIndicator size="large" /><Text style={styles.loadingText}>Restaurando sesión segura…</Text></View>;
+  }
+
+  if (user) {
+    const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="light" />
+        <ScrollView contentContainerStyle={styles.dashboardContent}>
+          <Text style={styles.product}>JAFORA ERP MOBILE</Text>
+          <Text style={styles.dashboardTitle}>Hola, {displayName}</Text>
+          <Text style={styles.dashboardSubtitle}>{user.email}</Text>
+          <View style={styles.card}>
+            <Text style={styles.eyebrow}>SESIÓN ACTIVA</Text>
+            <Text style={styles.title}>Tu espacio de trabajo</Text>
+            <Text style={styles.description}>Módulos disponibles según tus permisos actuales.</Text>
+            <View style={styles.moduleGrid}>{modules.map((module) => <View key={module} style={styles.moduleChip}><Text style={styles.moduleText}>{module}</Text></View>)}</View>
+            {modules.length === 0 ? <Text style={styles.messageText}>Tu cuenta no tiene módulos móviles disponibles todavía.</Text> : null}
+            <Pressable style={styles.logoutButton} onPress={async () => { setLoading(true); await logout(); setUser(null); setLoading(false); }} disabled={loading}>
+              <Text style={styles.logoutText}>{loading ? 'Cerrando…' : 'Cerrar sesión'}</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -125,12 +183,13 @@ export default function LoginScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={handleLogin}
+            disabled={loading}
             style={({ pressed }) => [
               styles.loginButton,
               pressed && styles.loginButtonPressed,
             ]}
           >
-            <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+            <Text style={styles.loginButtonText}>{loading ? 'Ingresando…' : 'Iniciar sesión'}</Text>
           </Pressable>
 
           <View style={styles.securityRow}>
@@ -148,6 +207,16 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  centered: { alignItems: 'center', justifyContent: 'center', padding: 24 },
+  loadingText: { color: '#C8D3E5', marginTop: 14, fontSize: 14 },
+  dashboardContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 70, paddingBottom: 32 },
+  dashboardTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', marginTop: 12 },
+  dashboardSubtitle: { color: '#C8D3E5', fontSize: 14, marginTop: 6, marginBottom: 28 },
+  moduleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 22 },
+  moduleChip: { backgroundColor: '#EEF5FF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11 },
+  moduleText: { color: '#1457A6', fontWeight: '800', fontSize: 13 },
+  logoutButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D8E0EA', borderRadius: 15, marginTop: 8 },
+  logoutText: { color: '#26344E', fontWeight: '800', fontSize: 14 },
   screen: {
     flex: 1,
     backgroundColor: '#101C35',
