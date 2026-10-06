@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(true);
   const [user, setUser] = useState<MobileUser | null>(null);
+  const [activeModule, setActiveModule] = useState<string | null>(null);
   const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function LoginScreen() {
             <Text style={styles.eyebrow}>SESIÓN ACTIVA</Text>
             <Text style={styles.title}>Tu espacio de trabajo</Text>
             <Text style={styles.description}>Módulos disponibles según tus permisos actuales.</Text>
-            <View style={styles.moduleGrid}>{modules.map((module) => <View key={module} style={styles.moduleChip}><Text style={styles.moduleText}>{module}</Text></View>)}</View>
+            <View style={styles.moduleGrid}>{modules.map((module) => <Pressable key={module} style={({ pressed }) => [styles.moduleChip, pressed && styles.modulePressed]} onPress={() => setActiveModule(module)}><Text style={styles.moduleText}>{module}</Text><Text style={styles.moduleArrow}>›</Text></Pressable>)}</View>
             {modules.length === 0 ? <Text style={styles.messageText}>Tu cuenta no tiene módulos móviles disponibles todavía.</Text> : null}
             <Pressable style={styles.logoutButton} onPress={async () => { setLoading(true); await logout(); setUser(null); setLoading(false); }} disabled={loading}>
               <Text style={styles.logoutText}>{loading ? 'Cerrando…' : 'Cerrar sesión'}</Text>
