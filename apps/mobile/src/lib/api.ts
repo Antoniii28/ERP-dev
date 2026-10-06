@@ -108,6 +108,15 @@ export const logout = async () => {
   await clearSession();
 };
 
+export const apiGet = async <T>(path: string): Promise<T> => {
+  if (!accessToken) accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  if (!accessToken) throw new Error('Tu sesión no está disponible.');
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return (await parse<T>(response)).data;
+};
+
 export const permissionsFor = (user: MobileUser) =>
   new Set(user.roles.flatMap((role) => role.permissions));
 
