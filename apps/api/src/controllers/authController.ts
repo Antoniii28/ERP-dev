@@ -22,10 +22,25 @@ export const bootstrap = async (req: Request, res: Response, next: NextFunction)
   try { const data=await authService.bootstrapAdmin(req.body); setRefreshCookie(res,data.refreshToken); const {refreshToken:_,...publicData}=data; void _; ok(res,publicData,'Administrador inicial creado',201); } catch (e) { next(e); }
 };
 export const login = async (req: Request, res: Response, next: NextFunction) => {
-  try { const data=await authService.login(req.body.email, req.body.password); setRefreshCookie(res,data.refreshToken); await writeAudit({actorId:data.user.id,companyId:data.user.companyId,action:'auth.login',entityType:'User',entityId:data.user.id}); const {refreshToken:_,...publicData}=data; void _; ok(res,publicData,'Sesión iniciada'); } catch (e) { next(e); }
+  try {
+    const data = await authService.login(req.body.email, req.body.password);
+    setRefreshCookie(res, data.refreshToken);
+    await writeAudit({actorId:data.user.id,companyId:data.user.companyId,action:'auth.login',entityType:'User',entityId:data.user.id});
+    const isMobileClient = req.get('X-JAFORA-Client') === 'mobile';
+    const publicData = isMobileClient ? data : (({ refreshToken: _, ...rest }) => { void _; return rest; })(data);
+    ok(res, publicData, 'Sesión iniciada');
+  } catch (e) { next(e); }
 };
 export const refresh = async (req: Request, res: Response, next: NextFunction) => {
-  try { const token=req.cookies?.['jafora.refresh'] ?? req.body.refreshToken; if (!token) throw new AuthenticationError('Sesión inválida'); const data=await authService.refresh(token); setRefreshCookie(res,data.refreshToken); const {refreshToken:_,...publicData}=data; void _; ok(res,publicData,'Sesión renovada'); } catch (e) { next(e); }
+  try {
+    const token=req.cookies?.['jafora.refresh'] ?? req.body.refreshToken;
+    if (!token) throw new AuthenticationError('Sesión inválida');
+    const data=await authService.refresh(token);
+    setRefreshCookie(res,data.refreshToken);
+    const isMobileClient = req.get('X-JAFORA-Client') === 'mobile';
+    const publicData = isMobileClient ? data : (({ refreshToken: _, ...rest }) => { void _; return rest; })(data);
+    ok(res, publicData, 'Sesión renovada');
+  } catch (e) { next(e); }
 };
 export const logout = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try { await authService.logout(req.auth!.userId); clearRefreshCookie(res); await writeAudit({actorId:req.auth!.userId,companyId:req.auth?.companyId,action:'auth.logout',entityType:'User',entityId:req.auth!.userId}); ok(res,null,'Sesión cerrada'); } catch (e) { next(e); }
