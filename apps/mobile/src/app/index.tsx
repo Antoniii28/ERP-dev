@@ -1,5 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
+import { apiGet, can, login, logout, restoreSession, type MobileUser } from '../lib/api';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,8 +18,50 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(true);
+  const [user, setUser] = useState<MobileUser | null>(null);
+  const [activeModule, setActiveModule] = useState<string | null>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const [moduleLoading, setModuleLoading] = useState(false);
+  const [moduleError, setModuleError] = useState('');
+  const [moduleItems, setModuleItems] = useState<any[]>([]);
 
-  const handleLogin = () => {
+  useEffect(() => {
+    restoreSession()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setRestoring(false));
+  }, []);
+
+  const modules = useMemo(() => {
+    if (!user) return [];
+    const candidates = [
+      ['Usuarios', 'users.read'], ['Empresas', 'companies.read'], ['Productos', 'products.read'],
+      ['Comercial', 'sales.read'], ['Reportes', 'reports.read'], ['CRM', 'crm.read'], ['Analítica', 'reports.read'],
+    ] as const;
+    return candidates.filter(([, permission]) => can(user, permission)).map(([name]) => name);
+  }, [user]);
+
+  const openModule = async (module: string) => {
+    setActiveModule(module);
+    setModuleItems([]);
+    setModuleError('');
+    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Productos: '/products' };
+    const path = paths[module];
+    if (!path) return;
+    setModuleLoading(true);
+    try {
+      const data = await apiGet<any[]>(path);
+      setModuleItems(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setModuleError(error instanceof Error ? error.message : 'No fue posible consultar el módulo.');
+    } finally {
+      setModuleLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
     const normalizedEmail = email.trim();
 
     if (!normalizedEmail || !password) {
@@ -30,19 +74,85 @@ export default function LoginScreen() {
       return;
     }
 
-    setMessage('Interfaz lista. La conexión con la API se realizará después.');
+    setLoading(true);
+    setMessage('');
+    try {
+      setUser(await login(normalizedEmail, password));
+      setPassword('');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No fue posible iniciar sesión.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (restoring) {
+    return <View style={[styles.screen, styles.centered]}><StatusBar style="light" /><ActivityIndicator size="large" /><Text style={styles.loadingText}>Restaurando sesión segura…</Text></View>;
+  }
+
+  if (user) {
+    const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
+
+    if (activeModule) {
+      const integrated = ['Usuarios', 'Empresas', 'Productos'].includes(activeModule);
+      return (
+        <View style={styles.screen}>
+          <StatusBar style="light" />
+          <ScrollView contentContainerStyle={styles.dashboardContent}>
+            <Pressable onPress={() => { setActiveModule(null); setModuleItems([]); setModuleError(''); }}><Text style={styles.backText}>‹ Volver al inicio</Text></Pressable>
+            <Text style={styles.product}>JAFORA ERP MOBILE</Text>
+            <Text style={styles.dashboardTitle}>{activeModule}</Text>
+            <Text style={styles.dashboardSubtitle}>{integrated ? 'Información consultada desde JAFORA ERP.' : 'Módulo móvil en preparación.'}</Text>
+            <View style={styles.card}>
+              {moduleLoading ? <ActivityIndicator size="large" /> : null}
+              {moduleError ? <View style={styles.messageBox}><Text style={styles.messageText}>{moduleError}</Text></View> : null}
+              {!moduleLoading && !moduleError && integrated && moduleItems.length === 0 ? <Text style={styles.messageText}>No hay registros disponibles.</Text> : null}
+              {!moduleLoading && !moduleError && moduleItems.map((item, index) => {
+                const title = item.name || item.username || item.sku || item.email || `Registro ${index + 1}`;
+                const detail = item.email || item.sku || item.legalName || (item.isActive === false ? 'Inactivo' : 'Activo');
+                return <View key={item._id || item.id || String(index)} style={styles.dataRow}><Text style={styles.dataTitle}>{title}</Text><Text style={styles.dataDetail}>{detail}</Text></View>;
+              })}
+              {!integrated ? <Text style={styles.messageText}>Esta sección está disponible en JAFORA y su interfaz móvil continuará en la siguiente versión.</Text> : null}
+            </View>
+          </ScrollView>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="light" />
+        <ScrollView contentContainerStyle={styles.dashboardContent}>
+          <Text style={styles.product}>JAFORA ERP MOBILE</Text>
+          <Text style={styles.dashboardTitle}>Hola, {displayName}</Text>
+          <Text style={styles.dashboardSubtitle}>{user.email}</Text>
+          <View style={styles.card}>
+            <Text style={styles.eyebrow}>SESIÓN ACTIVA</Text>
+            <Text style={styles.title}>Tu espacio de trabajo</Text>
+            <Text style={styles.description}>Módulos disponibles según tus permisos actuales.</Text>
+            <View style={styles.moduleGrid}>{modules.map((module) => <Pressable key={module} style={({ pressed }) => [styles.moduleChip, pressed && styles.modulePressed]} onPress={() => openModule(module)}><Text style={styles.moduleText}>{module}</Text><Text style={styles.moduleArrow}>›</Text></Pressable>)}</View>
+            {modules.length === 0 ? <Text style={styles.messageText}>Tu cuenta no tiene módulos móviles disponibles todavía.</Text> : null}
+            <Pressable style={styles.logoutButton} onPress={async () => { setLoading(true); await logout(); setUser(null); setLoading(false); }} disabled={loading}>
+              <Text style={styles.logoutText}>{loading ? 'Cerrando…' : 'Cerrar sesión'}</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
     >
       <StatusBar style="light" />
 
       <ScrollView
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.brandSection}>
@@ -79,6 +189,8 @@ export default function LoginScreen() {
               autoCorrect={false}
               textContentType="emailAddress"
               returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
           </View>
 
@@ -86,6 +198,7 @@ export default function LoginScreen() {
             <Text style={styles.label}>Contraseña</Text>
             <View style={styles.passwordField}>
               <TextInput
+                ref={passwordRef}
                 style={styles.passwordInput}
                 value={password}
                 onChangeText={(value) => {
@@ -125,12 +238,13 @@ export default function LoginScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={handleLogin}
+            disabled={loading}
             style={({ pressed }) => [
               styles.loginButton,
               pressed && styles.loginButtonPressed,
             ]}
           >
-            <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+            <Text style={styles.loginButtonText}>{loading ? 'Ingresando…' : 'Iniciar sesión'}</Text>
           </Pressable>
 
           <View style={styles.securityRow}>
@@ -148,6 +262,20 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  centered: { alignItems: 'center', justifyContent: 'center', padding: 24 },
+  loadingText: { color: '#C8D3E5', marginTop: 14, fontSize: 14 },
+  dashboardContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 70, paddingBottom: 32 },
+  backText: { color: '#C8D3E5', fontSize: 15, fontWeight: '700', marginBottom: 18 },
+  dataRow: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E5EAF0', borderRadius: 12, padding: 12, marginBottom: 9 },
+  dataTitle: { color: '#101C35', fontSize: 14, fontWeight: '800' },
+  dataDetail: { color: '#657185', fontSize: 12, marginTop: 4 },
+  dashboardTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', marginTop: 12 },
+  dashboardSubtitle: { color: '#C8D3E5', fontSize: 14, marginTop: 6, marginBottom: 28 },
+  moduleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 22 },
+  moduleChip: { backgroundColor: '#EEF5FF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11 },
+  moduleText: { color: '#1457A6', fontWeight: '800', fontSize: 13 },
+  logoutButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D8E0EA', borderRadius: 15, marginTop: 8 },
+  logoutText: { color: '#26344E', fontWeight: '800', fontSize: 14 },
   screen: {
     flex: 1,
     backgroundColor: '#101C35',
