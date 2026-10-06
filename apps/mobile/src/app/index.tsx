@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { can, login, logout, restoreSession, type MobileUser } from '../lib/api';
 import {
@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(true);
   const [user, setUser] = useState<MobileUser | null>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
     restoreSession()
@@ -94,13 +95,15 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
     >
       <StatusBar style="light" />
 
       <ScrollView
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.brandSection}>
@@ -137,6 +140,8 @@ export default function LoginScreen() {
               autoCorrect={false}
               textContentType="emailAddress"
               returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
           </View>
 
@@ -144,6 +149,7 @@ export default function LoginScreen() {
             <Text style={styles.label}>Contraseña</Text>
             <View style={styles.passwordField}>
               <TextInput
+                ref={passwordRef}
                 style={styles.passwordInput}
                 value={password}
                 onChangeText={(value) => {
