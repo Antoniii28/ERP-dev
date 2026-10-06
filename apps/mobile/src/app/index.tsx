@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
-import { can, login, logout, restoreSession, type MobileUser } from '../lib/api';
+import { apiGet, can, login, logout, restoreSession, type MobileUser } from '../lib/api';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +23,9 @@ export default function LoginScreen() {
   const [user, setUser] = useState<MobileUser | null>(null);
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const passwordRef = useRef<TextInput>(null);
+  const [moduleLoading, setModuleLoading] = useState(false);
+  const [moduleError, setModuleError] = useState('');
+  const [moduleItems, setModuleItems] = useState<any[]>([]);
 
   useEffect(() => {
     restoreSession()
@@ -39,6 +42,24 @@ export default function LoginScreen() {
     ] as const;
     return candidates.filter(([, permission]) => can(user, permission)).map(([name]) => name);
   }, [user]);
+
+  const openModule = async (module: string) => {
+    setActiveModule(module);
+    setModuleItems([]);
+    setModuleError('');
+    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Operaciones: '/core/products' };
+    const path = paths[module];
+    if (!path) return;
+    setModuleLoading(true);
+    try {
+      const data = await apiGet<any[]>(path);
+      setModuleItems(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setModuleError(error instanceof Error ? error.message : 'No fue posible consultar el módulo.');
+    } finally {
+      setModuleLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     const normalizedEmail = email.trim();
@@ -82,7 +103,7 @@ export default function LoginScreen() {
             <Text style={styles.eyebrow}>SESIÓN ACTIVA</Text>
             <Text style={styles.title}>Tu espacio de trabajo</Text>
             <Text style={styles.description}>Módulos disponibles según tus permisos actuales.</Text>
-            <View style={styles.moduleGrid}>{modules.map((module) => <Pressable key={module} style={({ pressed }) => [styles.moduleChip, pressed && styles.modulePressed]} onPress={() => setActiveModule(module)}><Text style={styles.moduleText}>{module}</Text><Text style={styles.moduleArrow}>›</Text></Pressable>)}</View>
+            <View style={styles.moduleGrid}>{modules.map((module) => <Pressable key={module} style={({ pressed }) => [styles.moduleChip, pressed && styles.modulePressed]} onPress={() => openModule(module)}><Text style={styles.moduleText}>{module}</Text><Text style={styles.moduleArrow}>›</Text></Pressable>)}</View>
             {modules.length === 0 ? <Text style={styles.messageText}>Tu cuenta no tiene módulos móviles disponibles todavía.</Text> : null}
             <Pressable style={styles.logoutButton} onPress={async () => { setLoading(true); await logout(); setUser(null); setLoading(false); }} disabled={loading}>
               <Text style={styles.logoutText}>{loading ? 'Cerrando…' : 'Cerrar sesión'}</Text>
