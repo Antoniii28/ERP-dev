@@ -37,7 +37,7 @@ export default function LoginScreen() {
   const modules = useMemo(() => {
     if (!user) return [];
     const candidates = [
-      ['Usuarios', 'users.read'], ['Empresas', 'companies.read'], ['Operaciones', 'products.read'],
+      ['Usuarios', 'users.read'], ['Empresas', 'companies.read'], ['Productos', 'products.read'],
       ['Comercial', 'sales.read'], ['Reportes', 'reports.read'], ['CRM', 'crm.read'], ['Analítica', 'reports.read'],
     ] as const;
     return candidates.filter(([, permission]) => can(user, permission)).map(([name]) => name);
@@ -47,7 +47,7 @@ export default function LoginScreen() {
     setActiveModule(module);
     setModuleItems([]);
     setModuleError('');
-    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Operaciones: '/products' };
+    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Productos: '/products' };
     const path = paths[module];
     if (!path) return;
     setModuleLoading(true);
@@ -94,7 +94,7 @@ export default function LoginScreen() {
     const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
 
     if (activeModule) {
-      const integrated = ['Usuarios', 'Empresas', 'Operaciones'].includes(activeModule);
+      const integrated = ['Usuarios', 'Empresas', 'Productos'].includes(activeModule);
       return (
         <View style={styles.screen}>
           <StatusBar style="light" />
