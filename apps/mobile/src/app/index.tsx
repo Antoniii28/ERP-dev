@@ -47,7 +47,7 @@ export default function LoginScreen() {
     setActiveModule(module);
     setModuleItems([]);
     setModuleError('');
-    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Operaciones: '/core/products' };
+    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Operaciones: '/products' };
     const path = paths[module];
     if (!path) return;
     setModuleLoading(true);
@@ -92,6 +92,33 @@ export default function LoginScreen() {
 
   if (user) {
     const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
+
+    if (activeModule) {
+      const integrated = ['Usuarios', 'Empresas', 'Operaciones'].includes(activeModule);
+      return (
+        <View style={styles.screen}>
+          <StatusBar style="light" />
+          <ScrollView contentContainerStyle={styles.dashboardContent}>
+            <Pressable onPress={() => { setActiveModule(null); setModuleItems([]); setModuleError(''); }}><Text style={styles.backText}>‹ Volver al inicio</Text></Pressable>
+            <Text style={styles.product}>JAFORA ERP MOBILE</Text>
+            <Text style={styles.dashboardTitle}>{activeModule}</Text>
+            <Text style={styles.dashboardSubtitle}>{integrated ? 'Información consultada desde JAFORA ERP.' : 'Módulo móvil en preparación.'}</Text>
+            <View style={styles.card}>
+              {moduleLoading ? <ActivityIndicator size="large" /> : null}
+              {moduleError ? <View style={styles.messageBox}><Text style={styles.messageText}>{moduleError}</Text></View> : null}
+              {!moduleLoading && !moduleError && integrated && moduleItems.length === 0 ? <Text style={styles.messageText}>No hay registros disponibles.</Text> : null}
+              {!moduleLoading && !moduleError && moduleItems.map((item, index) => {
+                const title = item.name || item.username || item.sku || item.email || `Registro ${index + 1}`;
+                const detail = item.email || item.sku || item.legalName || (item.isActive === false ? 'Inactivo' : 'Activo');
+                return <View key={item._id || item.id || String(index)} style={styles.dataRow}><Text style={styles.dataTitle}>{title}</Text><Text style={styles.dataDetail}>{detail}</Text></View>;
+              })}
+              {!integrated ? <Text style={styles.messageText}>Esta sección está disponible en JAFORA y su interfaz móvil continuará en la siguiente versión.</Text> : null}
+            </View>
+          </ScrollView>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.screen}>
         <StatusBar style="light" />
@@ -238,6 +265,10 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', justifyContent: 'center', padding: 24 },
   loadingText: { color: '#C8D3E5', marginTop: 14, fontSize: 14 },
   dashboardContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 70, paddingBottom: 32 },
+  backText: { color: '#C8D3E5', fontSize: 15, fontWeight: '700', marginBottom: 18 },
+  dataRow: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E5EAF0', borderRadius: 12, padding: 12, marginBottom: 9 },
+  dataTitle: { color: '#101C35', fontSize: 14, fontWeight: '800' },
+  dataDetail: { color: '#657185', fontSize: 12, marginTop: 4 },
   dashboardTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '800', marginTop: 12 },
   dashboardSubtitle: { color: '#C8D3E5', fontSize: 14, marginTop: 6, marginBottom: 28 },
   moduleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 22 },
