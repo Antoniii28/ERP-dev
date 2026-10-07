@@ -38,7 +38,8 @@ export default function LoginScreen() {
     if (!user) return [];
     const candidates = [
       ['Usuarios', 'users.read'], ['Empresas', 'companies.read'], ['Productos', 'products.read'],
-      ['Comercial', 'sales.read'], ['Reportes', 'reports.read'], ['CRM', 'crm.read'], ['Analítica', 'reports.read'],
+      ['Clientes', 'customers.read'], ['Proveedores', 'suppliers.read'], ['Inventario', 'inventory.read'],
+      ['Ventas', 'sales.read'],
     ] as const;
     return candidates.filter(([, permission]) => can(user, permission)).map(([name]) => name);
   }, [user]);
@@ -47,7 +48,15 @@ export default function LoginScreen() {
     setActiveModule(module);
     setModuleItems([]);
     setModuleError('');
-    const paths: Record<string, string> = { Usuarios: '/users', Empresas: '/companies', Productos: '/products' };
+    const paths: Record<string, string> = {
+      Usuarios: '/users',
+      Empresas: '/companies',
+      Productos: '/products',
+      Clientes: '/customers',
+      Proveedores: '/suppliers',
+      Inventario: '/inventory',
+      Ventas: '/sales',
+    };
     const path = paths[module];
     if (!path) return;
     setModuleLoading(true);
@@ -94,7 +103,7 @@ export default function LoginScreen() {
     const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username;
 
     if (activeModule) {
-      const integrated = ['Usuarios', 'Empresas', 'Productos'].includes(activeModule);
+      const integrated = ['Usuarios', 'Empresas', 'Productos', 'Clientes', 'Proveedores', 'Inventario', 'Ventas'].includes(activeModule);
       return (
         <View style={styles.screen}>
           <StatusBar style="light" />
@@ -108,8 +117,17 @@ export default function LoginScreen() {
               {moduleError ? <View style={styles.messageBox}><Text style={styles.messageText}>{moduleError}</Text></View> : null}
               {!moduleLoading && !moduleError && integrated && moduleItems.length === 0 ? <Text style={styles.messageText}>No hay registros disponibles.</Text> : null}
               {!moduleLoading && !moduleError && moduleItems.map((item, index) => {
-                const title = item.name || item.username || item.sku || item.email || `Registro ${index + 1}`;
-                const detail = item.email || item.sku || item.legalName || (item.isActive === false ? 'Inactivo' : 'Activo');
+                const saleItem = item.items?.[0];
+                const title =
+                  activeModule === 'Inventario' ? (item.productId?.name || item.productId?.sku || `Existencia ${index + 1}`) :
+                  activeModule === 'Ventas' ? (item.customerId?.name || `Venta ${String(item._id || item.id || index + 1).slice(-6)}`) :
+                  item.name || item.username || item.sku || item.email || `Registro ${index + 1}`;
+                const detail =
+                  activeModule === 'Inventario'
+                    ? `${item.productId?.sku || 'Sin SKU'} · ${item.branchId?.name || 'Sin sucursal'} · Existencia: ${item.quantity ?? 0}`
+                    : activeModule === 'Ventas'
+                      ? `${item.branchId?.name || 'Sin sucursal'} · ${saleItem?.productId?.name || saleItem?.productId?.sku || 'Producto'} x${saleItem?.quantity ?? 0} · Total: ${Number(item.total ?? 0).toFixed(2)}`
+                      : item.email || item.phone || item.sku || item.legalName || (item.isActive === false ? 'Inactivo' : 'Activo');
                 return <View key={item._id || item.id || String(index)} style={styles.dataRow}><Text style={styles.dataTitle}>{title}</Text><Text style={styles.dataDetail}>{detail}</Text></View>;
               })}
               {!integrated ? <Text style={styles.messageText}>Esta sección está disponible en JAFORA y su interfaz móvil continuará en la siguiente versión.</Text> : null}
