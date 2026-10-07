@@ -1,0 +1,28 @@
+name: QA Core Integration
+
+on:
+  push:
+    branches:
+      - qa/core-integration-tests
+  pull_request:
+    branches:
+      - feature/preproduction-hardening
+
+jobs:
+  core-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Core integration tests
+        run: npx vitest run tests/integration/commercial-core.test.ts
