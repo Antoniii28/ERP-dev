@@ -184,6 +184,38 @@ describe('QA-1 commercial core integration', () => {
     expect(await AuditLogModel.exists({action:'inventory.set',entityId:r.body.data._id})).toBeTruthy();
   });
 
+  it('18. protects PDF report export with reports.read', async () => {
+    const a=await tenant('pdf-rbac',['sales.read']);
+    const r=await request(app).get('/api/v1/reports/summary/pdf').set(auth(a.token));
+    expect(r.status).toBe(403);
+  });
+
+  it('19-20. exports a valid tenant-scoped executive PDF', async () => {
+    const a=await tenant('pdf-A'); const b=await tenant('pdf-B');
+    await SaleModel.create({companyId:a.company._id,branchId:a.branch._id,items:[],total:123,status:'completed'});
+    await PurchaseModel.create({companyId:a.company._id,branchId:a.branch._id,items:[],total:45,status:'completed'});
+    await FinanceEntryModel.create({companyId:a.company._id,branchId:a.branch._id,type:'income',category:'qa',description:'A income',amount:123,sourceType:'manual'});
+    await FinanceEntryModel.create({companyId:a.company._id,branchId:a.branch._id,type:'expense',category:'qa',description:'A expense',amount:45,sourceType:'manual'});
+    await SaleModel.create({companyId:b.company._id,branchId:b.branch._id,items:[],total:999,status:'completed'});
+    await FinanceEntryModel.create({companyId:b.company._id,branchId:b.branch._id,type:'income',category:'qa',description:'B income',amount:999,sourceType:'manual'});
+    const r=await request(app).get('/api/v1/reports/summary/pdf').set(auth(a.token)).buffer(true).parse((res,cb)=>{const chunks:Buffer[]=[];res.on('data',(chunk:Buffer)=>chunks.push(chunk));res.on('end',()=>cb(null,Buffer.concat(chunks)))});
+    expect(r.status).toBe(200);
+    expect(r.headers['content-type']).toContain('application/pdf');
+    expect(r.headers['content-disposition']).toContain('attachment');
+    expect(r.headers['content-disposition']).toContain('jafora-reporte-ejecutivo.pdf');
+    expect(Buffer.isBuffer(r.body)).toBe(true);
+    const pdf=(r.body as Buffer).toString('latin1');
+    expect(pdf.startsWith('%PDF-1.4')).toBe(true);
+    expect(pdf).toContain('JAFORA ERP');
+    expect(pdf).toContain('Reporte Ejecutivo');
+    expect(pdf).toContain('Ventas totales: $ 123.00');
+    expect(pdf).toContain('Compras totales: $ 45.00');
+    expect(pdf).toContain('Ingresos: $ 123.00');
+    expect(pdf).toContain('Egresos: $ 45.00');
+    expect(pdf).toContain('Balance: $ 78.00');
+    expect(pdf).not.toContain('999.00');
+  });
+
   it('16-17. dashboard and reports reflect completed purchase and sale', async () => {
     const a=await tenant(); const p=await product(a.company._id,'report',100);
     await request(app).post('/api/v1/purchases').set(auth(a.token)).send({companyId:ids(a.company),branchId:ids(a.branch),productId:ids(p),quantity:5,unitCost:40});
