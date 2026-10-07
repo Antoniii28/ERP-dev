@@ -17,7 +17,7 @@ export const OrganizationsPage = () => {
   const [editingCompanyId,setEditingCompanyId]=useState<string|null>(null),[companyEdit,setCompanyEdit]=useState<CompanyEdit|null>(null);
   const [editingBranchId,setEditingBranchId]=useState<string|null>(null),[branchEdit,setBranchEdit]=useState<BranchEdit|null>(null);
 
-  const load = async () => { try { setError(''); const cs=can('companies.read')?await api<Company[]>('/companies'):[]; setCompanies(cs); if(!branch.companyId&&cs[0]?._id)setBranch(x=>({...x,companyId:cs[0]._id})); setBranches(can('branches.read')?await api<Branch[]>('/branches'):[]); } catch(e){setError(e instanceof Error?e.message:'Error al cargar organizaciones')} };
+  const load = async () => { try { setError(''); const cs=can('companies.read')?await api<Company[]>('/companies'):[]; setCompanies(cs); const firstCompanyId=cs[0]?._id; if(!branch.companyId&&firstCompanyId)setBranch(x=>({...x,companyId:firstCompanyId})); setBranches(can('branches.read')?await api<Branch[]>('/branches'):[]); } catch(e){setError(e instanceof Error?e.message:'Error al cargar organizaciones')} };
   useEffect(()=>{void load()},[api]);
 
   const createCompany=async(e:FormEvent)=>{e.preventDefault();try{await api('/companies',{method:'POST',body:JSON.stringify(company)});setCompany({name:'',legalName:'',taxId:'',email:'',phone:''});await load()}catch(x){setError(x instanceof Error?x.message:'Error al crear empresa')}};
