@@ -2,6 +2,27 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { apiGet, can, login, logout, restoreSession, type MobileUser } from '../lib/api';
+type MobileListItem = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  username?: string;
+  sku?: string;
+  email?: string;
+  phone?: string;
+  legalName?: string;
+  isActive?: boolean;
+  quantity?: number;
+  total?: number;
+  productId?: { name?: string; sku?: string };
+  branchId?: { name?: string };
+  customerId?: { name?: string };
+  items?: Array<{
+    productId?: { name?: string; sku?: string };
+    quantity?: number;
+  }>;
+};
+
 import {
   KeyboardAvoidingView,
   Platform,
@@ -25,7 +46,7 @@ export default function LoginScreen() {
   const passwordRef = useRef<TextInput>(null);
   const [moduleLoading, setModuleLoading] = useState(false);
   const [moduleError, setModuleError] = useState('');
-  const [moduleItems, setModuleItems] = useState<any[]>([]);
+  const [moduleItems, setModuleItems] = useState<MobileListItem[]>([]);
 
   useEffect(() => {
     restoreSession()
@@ -61,7 +82,7 @@ export default function LoginScreen() {
     if (!path) return;
     setModuleLoading(true);
     try {
-      const data = await apiGet<any[]>(path);
+      const data = await apiGet<MobileListItem[]>(path);
       setModuleItems(Array.isArray(data) ? data : []);
     } catch (error) {
       setModuleError(error instanceof Error ? error.message : 'No fue posible consultar el módulo.');
