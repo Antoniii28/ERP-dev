@@ -1,99 +1,39 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
-
 type Company = { _id: string; name: string; legalName?: string; taxId?: string; email?: string; phone?: string; isActive: boolean };
 type Branch = { _id: string; companyId: Company | string; name: string; code: string; address?: string; phone?: string; isActive: boolean };
-
-const api = async (path: string, init: RequestInit = {}) => {
-  const response = await fetch(`${API}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('jafora.access')}`, ...init.headers },
-  });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.message ?? 'No fue posible completar la operación');
-  return body.data;
-};
+type CompanyEdit = Omit<Company, '_id'>;
+type BranchEdit = { name: string; code: string; address: string; phone: string; isActive: boolean };
 
 export const OrganizationsPage = () => {
-  const { user } = useAuth();
+  const { user, api } = useAuth();
   const permissions = new Set(user?.roles.flatMap((role) => role.permissions) ?? []);
   const can = (permission: string) => permissions.has('*') || permissions.has(permission);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]), [branches, setBranches] = useState<Branch[]>([]);
   const [error, setError] = useState('');
   const [company, setCompany] = useState({ name: '', legalName: '', taxId: '', email: '', phone: '' });
   const [branch, setBranch] = useState({ companyId: '', name: '', code: '', address: '', phone: '' });
+  const [editingCompanyId,setEditingCompanyId]=useState<string|null>(null),[companyEdit,setCompanyEdit]=useState<CompanyEdit|null>(null);
+  const [editingBranchId,setEditingBranchId]=useState<string|null>(null),[branchEdit,setBranchEdit]=useState<BranchEdit|null>(null);
 
-  const load = async () => {
-    try {
-      setError('');
-      const companyData = can('companies.read') ? await api('/companies') : [];
-      setCompanies(companyData);
-      if (!branch.companyId && companyData[0]?._id) setBranch((current) => ({ ...current, companyId: companyData[0]._id }));
-      setBranches(can('branches.read') ? await api('/branches') : []);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al cargar organizaciones'); }
-  };
+  const load = async () => { try { setError(''); const cs=can('companies.read')?await api<Company[]>('/companies'):[]; setCompanies(cs); const firstCompanyId=cs[0]?._id; if(!branch.companyId&&firstCompanyId)setBranch(x=>({...x,companyId:firstCompanyId})); setBranches(can('branches.read')?await api<Branch[]>('/branches'):[]); } catch(e){setError(e instanceof Error?e.message:'Error al cargar organizaciones')} };
+  useEffect(()=>{void load()},[api]);
 
-  useEffect(() => { void load(); }, []);
+  const createCompany=async(e:FormEvent)=>{e.preventDefault();try{await api('/companies',{method:'POST',body:JSON.stringify(company)});setCompany({name:'',legalName:'',taxId:'',email:'',phone:''});await load()}catch(x){setError(x instanceof Error?x.message:'Error al crear empresa')}};
+  const createBranch=async(e:FormEvent)=>{e.preventDefault();try{await api('/branches',{method:'POST',body:JSON.stringify(branch)});setBranch(x=>({companyId:x.companyId,name:'',code:'',address:'',phone:''}));await load()}catch(x){setError(x instanceof Error?x.message:'Error al crear sucursal')}};
+  const saveCompany=async()=>{if(!editingCompanyId||!companyEdit)return;try{await api(`/companies/${editingCompanyId}`,{method:'PATCH',body:JSON.stringify(companyEdit)});setEditingCompanyId(null);setCompanyEdit(null);await load()}catch(x){setError(x instanceof Error?x.message:'Error al actualizar empresa')}};
+  const saveBranch=async()=>{if(!editingBranchId||!branchEdit)return;try{await api(`/branches/${editingBranchId}`,{method:'PATCH',body:JSON.stringify(branchEdit)});setEditingBranchId(null);setBranchEdit(null);await load()}catch(x){setError(x instanceof Error?x.message:'Error al actualizar sucursal')}};
 
-  const createCompany = async (event: FormEvent) => {
-    event.preventDefault();
-    try {
-      await api('/companies', { method: 'POST', body: JSON.stringify(company) });
-      setCompany({ name: '', legalName: '', taxId: '', email: '', phone: '' });
-      await load();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al crear empresa'); }
-  };
-
-  const createBranch = async (event: FormEvent) => {
-    event.preventDefault();
-    try {
-      await api('/branches', { method: 'POST', body: JSON.stringify(branch) });
-      setBranch((current) => ({ companyId: current.companyId, name: '', code: '', address: '', phone: '' }));
-      await load();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al crear sucursal'); }
-  };
-
-  return (
-    <section>
-      <div className="page-heading"><div><span className="eyebrow">Fase 2</span><h1>Empresas y sucursales</h1><p>Administra la estructura multiempresa de JAFORA ERP.</p></div></div>
-      {error && <p className="form-error">{error}</p>}
-
-      <div className="organization-grid">
-        {can('companies.create') && (
-          <form className="info-card admin-form" onSubmit={createCompany}>
-            <h2>Nueva empresa</h2>
-            <input placeholder="Nombre comercial" value={company.name} onChange={(e) => setCompany({ ...company, name: e.target.value })} required />
-            <input placeholder="Razón social" value={company.legalName} onChange={(e) => setCompany({ ...company, legalName: e.target.value })} />
-            <input placeholder="RFC / Identificador fiscal" value={company.taxId} onChange={(e) => setCompany({ ...company, taxId: e.target.value })} />
-            <input type="email" placeholder="Correo" value={company.email} onChange={(e) => setCompany({ ...company, email: e.target.value })} />
-            <input placeholder="Teléfono" value={company.phone} onChange={(e) => setCompany({ ...company, phone: e.target.value })} />
-            <button className="primary-button" type="submit">Crear empresa</button>
-          </form>
-        )}
-
-        {can('branches.create') && (
-          <form className="info-card admin-form" onSubmit={createBranch}>
-            <h2>Nueva sucursal</h2>
-            <select value={branch.companyId} onChange={(e) => setBranch({ ...branch, companyId: e.target.value })} required>
-              <option value="">Selecciona empresa</option>
-              {companies.filter((item) => item.isActive).map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
-            </select>
-            <input placeholder="Nombre de sucursal" value={branch.name} onChange={(e) => setBranch({ ...branch, name: e.target.value })} required />
-            <input placeholder="Código" value={branch.code} onChange={(e) => setBranch({ ...branch, code: e.target.value })} required />
-            <input placeholder="Dirección" value={branch.address} onChange={(e) => setBranch({ ...branch, address: e.target.value })} />
-            <input placeholder="Teléfono" value={branch.phone} onChange={(e) => setBranch({ ...branch, phone: e.target.value })} />
-            <button className="primary-button" type="submit">Crear sucursal</button>
-          </form>
-        )}
-      </div>
-
-      <div className="organization-grid">
-        {can('companies.read') && <div className="info-card"><h2>Empresas</h2><div className="data-list">{companies.map((item) => <article key={item._id}><div><strong>{item.name}</strong><span>{item.legalName || 'Sin razón social'} · {item.taxId || 'Sin RFC'}</span></div><b>{item.isActive ? 'Activa' : 'Inactiva'}</b></article>)}{!companies.length && <p>No hay empresas registradas.</p>}</div></div>}
-        {can('branches.read') && <div className="info-card"><h2>Sucursales</h2><div className="data-list">{branches.map((item) => <article key={item._id}><div><strong>{item.name}</strong><span>{typeof item.companyId === 'string' ? '' : item.companyId.name} · {item.code}</span><small>{item.address || 'Sin dirección'}</small></div><b>{item.isActive ? 'Activa' : 'Inactiva'}</b></article>)}{!branches.length && <p>No hay sucursales registradas.</p>}</div></div>}
-      </div>
-    </section>
-  );
+  return <section>
+    <div className="page-heading"><div><span className="eyebrow">Fase 2</span><h1>Empresas y sucursales</h1><p>Administra la estructura multiempresa de JAFORA ERP.</p></div></div>{error&&<p className="form-error">{error}</p>}
+    <div className="organization-grid">
+      {can('companies.create')&&<form className="info-card admin-form" onSubmit={createCompany}><h2>Nueva empresa</h2><input placeholder="Nombre comercial" value={company.name} onChange={e=>setCompany({...company,name:e.target.value})} required/><input placeholder="Razón social" value={company.legalName} onChange={e=>setCompany({...company,legalName:e.target.value})}/><input placeholder="RFC / Identificador fiscal" value={company.taxId} onChange={e=>setCompany({...company,taxId:e.target.value})}/><input type="email" placeholder="Correo" value={company.email} onChange={e=>setCompany({...company,email:e.target.value})}/><input placeholder="Teléfono" value={company.phone} onChange={e=>setCompany({...company,phone:e.target.value})}/><button className="primary-button">Crear empresa</button></form>}
+      {can('branches.create')&&<form className="info-card admin-form" onSubmit={createBranch}><h2>Nueva sucursal</h2><select value={branch.companyId} onChange={e=>setBranch({...branch,companyId:e.target.value})} required><option value="">Selecciona empresa</option>{companies.filter(x=>x.isActive).map(x=><option key={x._id} value={x._id}>{x.name}</option>)}</select><input placeholder="Nombre de sucursal" value={branch.name} onChange={e=>setBranch({...branch,name:e.target.value})} required/><input placeholder="Código" value={branch.code} onChange={e=>setBranch({...branch,code:e.target.value})} required/><input placeholder="Dirección" value={branch.address} onChange={e=>setBranch({...branch,address:e.target.value})}/><input placeholder="Teléfono" value={branch.phone} onChange={e=>setBranch({...branch,phone:e.target.value})}/><button className="primary-button">Crear sucursal</button></form>}
+    </div>
+    <div className="organization-grid">
+      {can('companies.read')&&<div className="info-card"><h2>Empresas</h2><div className="data-list">{companies.map(x=><article key={x._id}>{editingCompanyId===x._id&&companyEdit?<div className="admin-form"><input value={companyEdit.name} onChange={e=>setCompanyEdit({...companyEdit,name:e.target.value})}/><input value={companyEdit.legalName??''} onChange={e=>setCompanyEdit({...companyEdit,legalName:e.target.value})}/><input value={companyEdit.taxId??''} onChange={e=>setCompanyEdit({...companyEdit,taxId:e.target.value})}/><input type="email" value={companyEdit.email??''} onChange={e=>setCompanyEdit({...companyEdit,email:e.target.value})}/><input value={companyEdit.phone??''} onChange={e=>setCompanyEdit({...companyEdit,phone:e.target.value})}/><label><input type="checkbox" checked={companyEdit.isActive} onChange={e=>setCompanyEdit({...companyEdit,isActive:e.target.checked})}/> Empresa activa</label><div><button className="primary-button" type="button" onClick={()=>void saveCompany()}>Guardar</button><button type="button" onClick={()=>{setEditingCompanyId(null);setCompanyEdit(null)}}>Cancelar</button></div></div>:<><div><strong>{x.name}</strong><span>{x.legalName||'Sin razón social'} · {x.taxId||'Sin RFC'}</span></div><div><b>{x.isActive?'Activa':'Inactiva'}</b>{can('companies.update')&&<button type="button" onClick={()=>{setEditingCompanyId(x._id);setCompanyEdit({name:x.name,legalName:x.legalName??'',taxId:x.taxId??'',email:x.email??'',phone:x.phone??'',isActive:x.isActive})}}>Editar</button>}</div></>}</article>)}{!companies.length&&<p>No hay empresas registradas.</p>}</div></div>}
+      {can('branches.read')&&<div className="info-card"><h2>Sucursales</h2><div className="data-list">{branches.map(x=><article key={x._id}>{editingBranchId===x._id&&branchEdit?<div className="admin-form"><input value={branchEdit.name} onChange={e=>setBranchEdit({...branchEdit,name:e.target.value})}/><input value={branchEdit.code} onChange={e=>setBranchEdit({...branchEdit,code:e.target.value})}/><input value={branchEdit.address} onChange={e=>setBranchEdit({...branchEdit,address:e.target.value})}/><input value={branchEdit.phone} onChange={e=>setBranchEdit({...branchEdit,phone:e.target.value})}/><label><input type="checkbox" checked={branchEdit.isActive} onChange={e=>setBranchEdit({...branchEdit,isActive:e.target.checked})}/> Sucursal activa</label><div><button className="primary-button" type="button" onClick={()=>void saveBranch()}>Guardar</button><button type="button" onClick={()=>{setEditingBranchId(null);setBranchEdit(null)}}>Cancelar</button></div></div>:<><div><strong>{x.name}</strong><span>{typeof x.companyId==='string'?'':x.companyId.name} · {x.code}</span><small>{x.address||'Sin dirección'}</small></div><div><b>{x.isActive?'Activa':'Inactiva'}</b>{can('branches.update')&&<button type="button" onClick={()=>{setEditingBranchId(x._id);setBranchEdit({name:x.name,code:x.code,address:x.address??'',phone:x.phone??'',isActive:x.isActive})}}>Editar</button>}</div></>}</article>)}{!branches.length&&<p>No hay sucursales registradas.</p>}</div></div>}
+    </div>
+  </section>;
 };
