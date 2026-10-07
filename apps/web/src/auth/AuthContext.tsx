@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 type User = { id: string; username: string; email: string; firstName?: string; lastName?: string; roles: Array<{ name: string; permissions: string[] }> };
-type AuthValue = { user: User | null; loading: boolean; login: (email: string, password: string) => Promise<void>; logout: () => Promise<void>; api: <T = unknown>(path: string, init?: RequestInit) => Promise<T> };
+type AuthValue = { user: User | null; loading: boolean; login: (email: string, password: string) => Promise<void>; logout: () => Promise<void>; api: <T = unknown>(path: string, init?: RequestInit) => Promise<T>; download: (path: string) => Promise<{ blob: Blob; filename: string }> };
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
 const AuthContext = createContext<AuthValue | null>(null);
@@ -75,14 +75,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     void restore();
   }, [clearSession, renew]);
 
+  const download = useCallback(async (path: string) => {
+    const send = async (token: string | null) => {
+      const response = await fetch(`${API}${path}`, {
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ message: 'No fue posible descargar el archivo' }));
+        const error = new Error(body.message ?? 'No fue posible descargar el archivo') as Error & { status?: number };
+        error.status = response.status;
+        throw error;
+      }
+      const disposition = response.headers.get('Content-Disposition') ?? '';
+      const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? 'jafora-reporte.pdf';
+      return { blob: await response.blob(), filename };
+    };
+    try {
+      return await send(getAccess());
+    } catch (error) {
+      if ((error as Error & { status?: number }).status !== 401) throw error;
+      try {
+        return await send(await renew());
+      } catch (refreshError) {
+        clearSession();
+        throw refreshError;
+      }
+    }
+  }, [clearSession, renew]);
+
   const value = useMemo<AuthValue>(() => ({
-    user, loading, api,
+    user, loading, api, download,
     login: async (email, password) => saveSession(await rawRequest('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })),
     logout: async () => {
       try { if (getAccess()) await api('/auth/logout', { method: 'POST' }); } catch { /* local logout still applies */ }
       clearSession();
     },
-  }), [api, clearSession, loading, saveSession, user]);
+  }), [api, clearSession, download, loading, saveSession, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
