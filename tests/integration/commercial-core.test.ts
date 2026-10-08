@@ -5,12 +5,21 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 let replset: MongoMemoryReplSet;
 let app: import('express').Express;
-let CompanyModel: any, BranchModel: any, SupplierModel: any, ProductModel: any, InventoryModel: any;
-let SaleModel: any, PurchaseModel: any, FinanceEntryModel: any, AuditLogModel: any, UserModel: any, RoleModel: any;
+let CompanyModel: typeof import('../../apps/api/src/models/Company.js').CompanyModel;
+let BranchModel: typeof import('../../apps/api/src/models/Branch.js').BranchModel;
+let SupplierModel: typeof import('../../apps/api/src/models/Supplier.js').SupplierModel;
+let ProductModel: typeof import('../../apps/api/src/models/Product.js').ProductModel;
+let InventoryModel: typeof import('../../apps/api/src/models/Inventory.js').InventoryModel;
+let SaleModel: typeof import('../../apps/api/src/models/Sale.js').SaleModel;
+let PurchaseModel: typeof import('../../apps/api/src/models/Purchase.js').PurchaseModel;
+let FinanceEntryModel: typeof import('../../apps/api/src/models/FinanceEntry.js').FinanceEntryModel;
+let AuditLogModel: typeof import('../../apps/api/src/models/AuditLog.js').AuditLogModel;
+let UserModel: typeof import('../../apps/api/src/models/User.js').UserModel;
+let RoleModel: typeof import('../../apps/api/src/models/Role.js').RoleModel;
 let createToken: (sub:string,type:'access'|'refresh')=>string;
 let hashPassword: (password:string)=>string;
 
-const ids = (x:any) => String(x._id);
+const ids = (x:{_id:unknown}) => String(x._id);
 const allPermissions = [
   'sales.read','sales.create','purchases.read','purchases.create','finance.read','finance.create',
   'inventory.read','inventory.update','reports.read','products.read','suppliers.read'
@@ -62,7 +71,7 @@ async function tenant(name='A', permissions=allPermissions) {
   return { company, branch, role, user, token: createToken(ids(user), 'access') };
 }
 
-async function product(companyId:any, suffix='1', price=100) {
+async function product(companyId:mongoose.Types.ObjectId, suffix='1', price=100) {
   return ProductModel.create({ companyId, sku:`SKU-${suffix}`, name:`Product ${suffix}`, cost:50, price, minStock:1 });
 }
 
